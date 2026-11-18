@@ -1,0 +1,73 @@
+{
+  "panoramas": [
+    {
+      "slug": "abandoned_bakery",
+      "path": "data\\panos\\abandoned_bakery.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/abandoned_bakery.jpg"
+    },
+    {
+      "slug": "empty_warehouse_01",
+      "path": "data\\panos\\empty_warehouse_01.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/empty_warehouse_01.jpg"
+    },
+    {
+      "slug": "small_empty_room_1",
+      "path": "data\\panos\\small_empty_room_1.jpg",
+      "w": 4096,
+      "h": 2048
+    },
+    {
+      "slug": "small_empty_room_2",
+      "path": "data\\panos\\small_empty_room_2.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/small_empty_room_2.jpg"
+    },
+    {
+      "slug": "brown_photostudio_02",
+      "path": "data\\panos\\brown_photostudio_02.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/brown_photostudio_02.jpg"
+    },
+    {
+      "slug": "studio_small_03",
+      "path": "data\\panos\\studio_small_03.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/studio_small_03.jpg"
+    },
+    {
+      "slug": "hotel_room",
+      "path": "data\\panos\\hotel_room.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/hotel_room.jpg"
+    },
+    {
+      "slug": "lebombo",
+      "path": "data\\panos\\lebombo.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/lebombo.jpg"
+    },
+    {
+      "slug": "venice_sunset",
+      "path": "data\\panos\\venice_sunset.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/venice_sunset.jpg"
+    },
+    {
+      "slug": "modern_buildings",
+      "path": "data\\panos\\modern_buildings.jpg",
+      "w": 4096,
+      "h": 2048,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/modern_buildings.jpg"
+    }
+  ]
+}

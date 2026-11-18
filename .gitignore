@@ -1,0 +1,33 @@
+# data and weights
+data/panos/*.jpg
+models/
+*.mp4
+*.pt
+*.pth
+*.safetensors
+
+# runtime artefacts
+results/*
+!results/*/
+results/*/*
+!results/*/metrics.json
+scratch/
+outputs/
+outputs_yume/
+logs/
+pano_test/
+.venv/
+.venv_*/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+third_party/
+.ego/
+
+# keep the case sets (deterministic benchmark inputs)
+!cases/
+!cases/**
+!cases_ood/
+!cases_ood/**

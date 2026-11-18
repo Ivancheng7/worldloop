@@ -1,0 +1,804 @@
+{
+  "version": "0.1.0",
+  "width": 1280,
+  "height": 720,
+  "fps": 8.0,
+  "n_cases": 15,
+  "panos": [
+    {
+      "slug": "hotel_room",
+      "path": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0
+    },
+    {
+      "slug": "lebombo",
+      "path": "data\\panos\\lebombo.jpg",
+      "start_yaw": 0.8203047484373349
+    },
+    {
+      "slug": "venice_sunset",
+      "path": "data\\panos\\venice_sunset.jpg",
+      "start_yaw": 1.6406094968746698
+    },
+    {
+      "slug": "modern_buildings",
+      "path": "data\\panos\\modern_buildings.jpg",
+      "start_yaw": 2.4609142453120048
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "hotel_room__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room"
+      }
+    },
+    {
+      "case_id": "hotel_room__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room"
+      }
+    },
+    {
+      "case_id": "hotel_room__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room"
+      }
+    },
+    {
+      "case_id": "lebombo__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\lebombo.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.007147271350569322,
+          "lat": 0.2804528175576769,
+          "size": 96,
+          "ref_px": 96.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 0.43670579350990635,
+          "lat": -0.07291887645272067,
+          "size": 96,
+          "ref_px": 432.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.41023664120957815,
+          "lat": 0.23715210006914705,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 224.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "lebombo"
+      }
+    },
+    {
+      "case_id": "lebombo__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\lebombo.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.007147271350569322,
+          "lat": 0.2804528175576769,
+          "size": 96,
+          "ref_px": 96.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 0.43670579350990635,
+          "lat": -0.07291887645272067,
+          "size": 96,
+          "ref_px": 432.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.41023664120957815,
+          "lat": 0.23715210006914705,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 224.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "lebombo"
+      }
+    },
+    {
+      "case_id": "lebombo__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\lebombo.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.007147271350569322,
+          "lat": 0.2804528175576769,
+          "size": 96,
+          "ref_px": 96.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 0.43670579350990635,
+          "lat": -0.07291887645272067,
+          "size": 96,
+          "ref_px": 432.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.41023664120957815,
+          "lat": 0.23715210006914705,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 224.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "lebombo"
+      }
+    },
+    {
+      "case_id": "venice_sunset__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\venice_sunset.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 1.7654113347107243,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        },
+        {
+          "lon": 2.3753341412216926,
+          "lat": 0.056946163765384646,
+          "size": 96,
+          "ref_px": 1104.0,
+          "ref_py": 320.0
+        },
+        {
+          "lon": 2.1753175504043956,
+          "lat": 0.012550815459714756,
+          "size": 96,
+          "ref_px": 944.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "venice_sunset"
+      }
+    },
+    {
+      "case_id": "venice_sunset__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\venice_sunset.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 1.7654113347107243,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        },
+        {
+          "lon": 2.3753341412216926,
+          "lat": 0.056946163765384646,
+          "size": 96,
+          "ref_px": 1104.0,
+          "ref_py": 320.0
+        },
+        {
+          "lon": 2.1753175504043956,
+          "lat": 0.012550815459714756,
+          "size": 96,
+          "ref_px": 944.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "venice_sunset"
+      }
+    },
+    {
+      "case_id": "venice_sunset__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\venice_sunset.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 1.7654113347107243,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        },
+        {
+          "lon": 2.3753341412216926,
+          "lat": 0.056946163765384646,
+          "size": 96,
+          "ref_px": 1104.0,
+          "ref_py": 320.0
+        },
+        {
+          "lon": 2.1753175504043956,
+          "lat": 0.012550815459714756,
+          "size": 96,
+          "ref_px": 944.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "venice_sunset"
+      }
+    },
+    {
+      "case_id": "modern_buildings__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\modern_buildings.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.8984532268840337,
+          "lat": 0.0974697492233009,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": 2.307500100522989,
+          "lat": 0.3927123603231552,
+          "size": 96,
+          "ref_px": 560.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": 0.2245871473447548,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 240.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "modern_buildings"
+      }
+    },
+    {
+      "case_id": "modern_buildings__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\modern_buildings.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.8984532268840337,
+          "lat": 0.0974697492233009,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": 2.307500100522989,
+          "lat": 0.3927123603231552,
+          "size": 96,
+          "ref_px": 560.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": 0.2245871473447548,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 240.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "modern_buildings"
+      }
+    },
+    {
+      "case_id": "modern_buildings__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\modern_buildings.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.8984532268840337,
+          "lat": 0.0974697492233009,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": 2.307500100522989,
+          "lat": 0.3927123603231552,
+          "size": 96,
+          "ref_px": 560.0,
+          "ref_py": 144.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": 0.2245871473447548,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 240.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "modern_buildings"
+      }
+    },
+    {
+      "case_id": "hotel_room__cf_left",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room",
+        "group": "hotel_room__cf"
+      }
+    },
+    {
+      "case_id": "hotel_room__cf_right",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room",
+        "group": "hotel_room__cf"
+      }
+    },
+    {
+      "case_id": "hotel_room__cf_null",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\hotel_room.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -0.35655207118468796,
+          "lat": 0.42378153086785403,
+          "size": 96,
+          "ref_px": 448.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": -0.18365636592757303,
+          "lat": 0.10573740524416925,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 304.0
+        },
+        {
+          "lon": -0.7982299192203728,
+          "lat": -0.14092635624988623,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 464.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "hotel_room",
+        "group": "hotel_room__cf"
+      }
+    }
+  ]
+}

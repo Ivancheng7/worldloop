@@ -1,0 +1,1327 @@
+{
+  "version": "0.1.0",
+  "width": 1280,
+  "height": 720,
+  "fps": 8.0,
+  "n_cases": 25,
+  "panos": [
+    {
+      "slug": "abandoned_bakery",
+      "path": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0
+    },
+    {
+      "slug": "empty_warehouse_01",
+      "path": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349
+    },
+    {
+      "slug": "small_empty_room_1",
+      "path": "data\\panos\\small_empty_room_1.jpg",
+      "start_yaw": 1.6406094968746698
+    },
+    {
+      "slug": "small_empty_room_2",
+      "path": "data\\panos\\small_empty_room_2.jpg",
+      "start_yaw": 2.4609142453120048
+    },
+    {
+      "slug": "brown_photostudio_02",
+      "path": "data\\panos\\brown_photostudio_02.jpg",
+      "start_yaw": 3.2812189937493397
+    },
+    {
+      "slug": "studio_small_03",
+      "path": "data\\panos\\studio_small_03.jpg",
+      "start_yaw": 4.101523742186674
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "abandoned_bakery__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01"
+      }
+    },
+    {
+      "case_id": "small_empty_room_1__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\small_empty_room_1.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.9243925344155,
+          "lat": 0.28473721559564424,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 160.0
+        },
+        {
+          "lon": 0.9243925344155001,
+          "lat": -0.3075528040265553,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 576.0
+        },
+        {
+          "lon": 2.262482375103895,
+          "lat": -0.3522295825119815,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 592.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_1"
+      }
+    },
+    {
+      "case_id": "small_empty_room_1__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\small_empty_room_1.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.9243925344155,
+          "lat": 0.28473721559564424,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 160.0
+        },
+        {
+          "lon": 0.9243925344155001,
+          "lat": -0.3075528040265553,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 576.0
+        },
+        {
+          "lon": 2.262482375103895,
+          "lat": -0.3522295825119815,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 592.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_1"
+      }
+    },
+    {
+      "case_id": "small_empty_room_1__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\small_empty_room_1.jpg",
+      "start_yaw": 1.6406094968746698,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.9243925344155,
+          "lat": 0.28473721559564424,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 160.0
+        },
+        {
+          "lon": 0.9243925344155001,
+          "lat": -0.3075528040265553,
+          "size": 96,
+          "ref_px": 192.0,
+          "ref_py": 576.0
+        },
+        {
+          "lon": 2.262482375103895,
+          "lat": -0.3522295825119815,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 592.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_1"
+      }
+    },
+    {
+      "case_id": "small_empty_room_2__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\small_empty_room_2.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.050846138084248,
+          "lat": 0.31632985067090214,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": 3.0827871235412303,
+          "lat": -0.23657150487080736,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 512.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": -0.28366357963184974,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 512.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_2"
+      }
+    },
+    {
+      "case_id": "small_empty_room_2__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\small_empty_room_2.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.050846138084248,
+          "lat": 0.31632985067090214,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": 3.0827871235412303,
+          "lat": -0.23657150487080736,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 512.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": -0.28366357963184974,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 512.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_2"
+      }
+    },
+    {
+      "case_id": "small_empty_room_2__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\small_empty_room_2.jpg",
+      "start_yaw": 2.4609142453120048,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.050846138084248,
+          "lat": 0.31632985067090214,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": 3.0827871235412303,
+          "lat": -0.23657150487080736,
+          "size": 96,
+          "ref_px": 1008.0,
+          "ref_py": 512.0
+        },
+        {
+          "lon": 2.64645010298175,
+          "lat": -0.28366357963184974,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 512.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "small_empty_room_2"
+      }
+    },
+    {
+      "case_id": "brown_photostudio_02__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\brown_photostudio_02.jpg",
+      "start_yaw": 3.2812189937493397,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.482989074528967,
+          "lat": 0.11823392722003977,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 272.0
+        },
+        {
+          "lon": -2.8771644755941925,
+          "lat": -0.19900450696863822,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 464.0
+        },
+        {
+          "lon": 2.871150886521583,
+          "lat": -0.07211725357980205,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "brown_photostudio_02"
+      }
+    },
+    {
+      "case_id": "brown_photostudio_02__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\brown_photostudio_02.jpg",
+      "start_yaw": 3.2812189937493397,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.482989074528967,
+          "lat": 0.11823392722003977,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 272.0
+        },
+        {
+          "lon": -2.8771644755941925,
+          "lat": -0.19900450696863822,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 464.0
+        },
+        {
+          "lon": 2.871150886521583,
+          "lat": -0.07211725357980205,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "brown_photostudio_02"
+      }
+    },
+    {
+      "case_id": "brown_photostudio_02__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\brown_photostudio_02.jpg",
+      "start_yaw": 3.2812189937493397,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 2.482989074528967,
+          "lat": 0.11823392722003977,
+          "size": 96,
+          "ref_px": 112.0,
+          "ref_py": 272.0
+        },
+        {
+          "lon": -2.8771644755941925,
+          "lat": -0.19900450696863822,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 464.0
+        },
+        {
+          "lon": 2.871150886521583,
+          "lat": -0.07211725357980205,
+          "size": 96,
+          "ref_px": 416.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "brown_photostudio_02"
+      }
+    },
+    {
+      "case_id": "studio_small_03__loop360",
+      "protocol": "loop360",
+      "pano": "data\\panos\\studio_small_03.jpg",
+      "start_yaw": 4.101523742186674,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "loop"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -2.9644922642819025,
+          "lat": 0.20593641937627769,
+          "size": 96,
+          "ref_px": 128.0,
+          "ref_py": 208.0
+        },
+        {
+          "lon": -2.2737885329045837,
+          "lat": 0.34147542666734715,
+          "size": 96,
+          "ref_px": 592.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": -2.8422422990796288,
+          "lat": 0.38455044901679103,
+          "size": 96,
+          "ref_px": 240.0,
+          "ref_py": 96.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "studio_small_03"
+      }
+    },
+    {
+      "case_id": "studio_small_03__occlusion",
+      "protocol": "occlusion",
+      "pano": "data\\panos\\studio_small_03.jpg",
+      "start_yaw": 4.101523742186674,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "depart"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "occluded"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "revisit"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -2.9644922642819025,
+          "lat": 0.20593641937627769,
+          "size": 96,
+          "ref_px": 128.0,
+          "ref_py": 208.0
+        },
+        {
+          "lon": -2.2737885329045837,
+          "lat": 0.34147542666734715,
+          "size": 96,
+          "ref_px": 592.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": -2.8422422990796288,
+          "lat": 0.38455044901679103,
+          "size": 96,
+          "ref_px": 240.0,
+          "ref_py": 96.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "studio_small_03"
+      }
+    },
+    {
+      "case_id": "studio_small_03__null_action",
+      "protocol": "null_action",
+      "pano": "data\\panos\\studio_small_03.jpg",
+      "start_yaw": 4.101523742186674,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 4.0,
+          "tag": "static"
+        }
+      ],
+      "probes": [
+        {
+          "lon": -2.9644922642819025,
+          "lat": 0.20593641937627769,
+          "size": 96,
+          "ref_px": 128.0,
+          "ref_py": 208.0
+        },
+        {
+          "lon": -2.2737885329045837,
+          "lat": 0.34147542666734715,
+          "size": 96,
+          "ref_px": 592.0,
+          "ref_py": 176.0
+        },
+        {
+          "lon": -2.8422422990796288,
+          "lat": 0.38455044901679103,
+          "size": 96,
+          "ref_px": 240.0,
+          "ref_py": 96.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "studio_small_03"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__drift",
+      "protocol": "drift",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "turn_right",
+          "seconds": 18.0,
+          "tag": "loop"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__cf_left",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery",
+        "group": "abandoned_bakery__cf"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__cf_right",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery",
+        "group": "abandoned_bakery__cf"
+      }
+    },
+    {
+      "case_id": "abandoned_bakery__cf_null",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\abandoned_bakery.jpg",
+      "start_yaw": 0.0,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.43753898157202875,
+          "lat": -0.07123195371905396,
+          "size": 96,
+          "ref_px": 880.0,
+          "ref_py": 400.0
+        },
+        {
+          "lon": 0.7173225375292357,
+          "lat": -0.035894386540070336,
+          "size": 96,
+          "ref_px": 1088.0,
+          "ref_py": 384.0
+        },
+        {
+          "lon": 0.12480183783605436,
+          "lat": 0.01447318874082422,
+          "size": 96,
+          "ref_px": 704.0,
+          "ref_py": 352.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "abandoned_bakery",
+        "group": "abandoned_bakery__cf"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__cf_left",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01",
+        "group": "empty_warehouse_01__cf"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__cf_right",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "turn_right",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "turn_left",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01",
+        "group": "empty_warehouse_01__cf"
+      }
+    },
+    {
+      "case_id": "empty_warehouse_01__cf_null",
+      "protocol": "counterfactual",
+      "pano": "data\\panos\\empty_warehouse_01.jpg",
+      "start_yaw": 0.8203047484373349,
+      "start_pitch": 0.0,
+      "fov": 1.2217304763960306,
+      "width": 1280,
+      "height": 720,
+      "fps": 8.0,
+      "segments": [
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "pre"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "intervention"
+        },
+        {
+          "action": "noop",
+          "seconds": 2.0,
+          "tag": "return"
+        }
+      ],
+      "probes": [
+        {
+          "lon": 0.5194884910647917,
+          "lat": 0.13205115753154628,
+          "size": 96,
+          "ref_px": 480.0,
+          "ref_py": 288.0
+        },
+        {
+          "lon": 0.6366483825097619,
+          "lat": 0.4420578188886547,
+          "size": 96,
+          "ref_px": 544.0,
+          "ref_py": 112.0
+        },
+        {
+          "lon": 1.0058406061070804,
+          "lat": -0.07726726773645617,
+          "size": 96,
+          "ref_px": 736.0,
+          "ref_py": 400.0
+        }
+      ],
+      "tags": {
+        "pano_slug": "empty_warehouse_01",
+        "group": "empty_warehouse_01__cf"
+      }
+    }
+  ]
+}
