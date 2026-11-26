@@ -463,6 +463,49 @@ class TestWorldLoopPipeline(unittest.TestCase):
         self.assertAlmostEqual(pair_15["pre"], 0.02, places=5)
         self.assertAlmostEqual(pair_15["post"], (4 * 0.02 + 32 * 0.60) / 36.0, places=5)
 
+    # ------------------------------------------------------------------ 7b. causal attribution metric
+    def test_causality_requires_both_separation_and_a_still_null_branch(self) -> None:
+        """The scored quantity must be 0 for both failure modes, not an average."""
+        base = np.zeros(4, dtype=np.float32)
+        base[0] = 1.0
+        other = np.zeros(4, dtype=np.float32)
+        other[1] = 1.0
+        segs = [{"tag": "pre", "seconds": 2.0},
+                {"tag": "intervention", "action": "turn_left", "seconds": 2.0},
+                {"tag": "return", "action": "turn_right", "seconds": 2.0}]
+        null_segs = [{"tag": "pre", "seconds": 2.0},
+                     {"tag": "intervention", "action": "noop", "seconds": 2.0},
+                     {"tag": "return", "action": "noop", "seconds": 2.0}]
+        cases = {"g__null": {"fps": 8.0, "segments": null_segs},
+                 "g__left": {"fps": 8.0, "segments": segs}}
+
+        # frozen frame: nothing separated, nothing drifted
+        frozen = np.stack([base] * 48)
+        g = P.cf_group_metrics({"g__null": frozen, "g__left": frozen.copy()}, cases, null_id="g__null")
+        self.assertAlmostEqual(g["cf_action_sep"], 0.0, places=6)
+        self.assertAlmostEqual(g["cf_null_drift"], 0.0, places=6)
+
+        # faithful: null holds still, the commanded branch moves only while commanded
+        acted = np.stack([base] * 16 + [other] * 16 + [base] * 16)
+        g = P.cf_group_metrics({"g__null": frozen, "g__left": acted}, cases, null_id="g__null")
+        self.assertGreater(g["cf_action_sep"], 0.9)
+        self.assertAlmostEqual(g["cf_null_drift"], 0.0, places=6)
+        self.assertAlmostEqual(g["cf_return_gap"], 0.0, places=6)
+
+        # a generator that wanders everywhere: "separation" is just drift
+        wander = np.stack([base] + [other] * 47)
+        g = P.cf_group_metrics({"g__null": wander, "g__left": wander.copy()}, cases, null_id="g__null")
+        self.assertAlmostEqual(g["cf_action_sep"], 0.0, places=6)
+        self.assertGreater(g["cf_null_drift"], 0.9)
+
+        # and the fold into the Causality axis
+        self.assertGreater(R.group_scores({"cf_action_sep": 0.30, "cf_null_drift": 0.0})["causality"], 99.0)
+        self.assertGreater(R.group_scores({"cf_action_sep": 0.30, "cf_null_drift": 0.9})["causality"], 0.0)
+        self.assertLess(R.group_scores({"cf_action_sep": 0.30, "cf_null_drift": 0.9})["causality"], 25.0)
+        self.assertEqual(R.group_scores({"cf_action_sep": 0.0, "cf_null_drift": 0.0})["causality"], 0.0)
+        # pre-rewrite results fall back to the legacy ASR so old metrics still render
+        self.assertAlmostEqual(R.group_scores({"asr_mean": 3.0})["causality"], 50.0, places=3)
+
     # ------------------------------------------------------------------ 8. report & group_scores
     def test_report_and_group_scores(self) -> None:
         empty_report = self.root / "nonexistent_subdir" / "EMPTY.md"
@@ -761,6 +804,65 @@ class TestWorldLoopPipeline(unittest.TestCase):
         self.assertEqual(rc_run, 0)
         self.assertEqual(len(created_instances), 1)
         self.assertEqual(created_instances[0].shutdown_called, 1)
+
+    # ------------------------------------------------------------------ 13. exporter integrity
+    def test_frame_integrity_flags_rewound_chunks(self) -> None:
+        """A chunked exporter that replays a stale buffer must be detected.
+
+        The v0.1 Yume results were corrupted this way: a swallowed chunk boundary
+        repeated the previous frame and then rewound to frame 0, so the rollout
+        still looked plausible while half its commanded motion was missing.  A
+        frozen-frame baseline is a legitimate still, so ``static`` must not flag.
+        """
+        pano0 = cv2.imread(str(self.pano_paths[0]))
+        case, start = C.build_case(
+            "scene_00__loop360",
+            "loop360",
+            str(self.pano_paths[0]),
+            C.PROTOCOLS["loop360"],
+            width=160,
+            height=120,
+            fps=8.0,
+        )
+        cdict = case.to_dict()
+        cams, _ = P._cams(cdict)
+        self.assertGreater(len(cams), 40)
+        clean = [render(pano0, cam) for cam in cams]
+
+        good = P.frame_integrity(clean, cams)
+        self.assertEqual(good["rewound_frames"], 0)
+        self.assertEqual(good["dup_frames"], 0)
+
+        # the v0.1 bug: freeze at 17..23, then replay 0..7 in place of 24..31
+        broken = list(clean)
+        for i in range(17, 24):
+            broken[i] = clean[16]
+        for i in range(8):
+            broken[24 + i] = clean[i]
+        bad = P.frame_integrity(broken, cams)
+        self.assertGreaterEqual(bad["rewound_frames"], 8)
+        self.assertGreater(bad["rewound_frame_ratio"], 0.15)
+        self.assertGreater(bad["rewound_motion_deg"], 30.0)
+
+        # holding a still frame while the camera is commanded to stay put is legal
+        pano_still = cv2.imread(str(self.pano_paths[0]))
+        still_case, _ = C.build_case(
+            "scene_00__null_action",
+            "null_action",
+            str(self.pano_paths[0]),
+            C.PROTOCOLS["null_action"],
+            width=160,
+            height=120,
+            fps=8.0,
+        )
+        still_cams, _ = P._cams(still_case.to_dict())
+        holding = [render(pano_still, still_cams[0]) for _ in still_cams]
+        still = P.frame_integrity(holding, still_cams)
+        self.assertEqual(still["dup_frames"], len(still_cams) - 1)
+        self.assertEqual(still["rewound_frames"], 0)
+
+        self.assertTrue(StaticModel.intentional_freeze)
+        self.assertFalse(OracleModel.intentional_freeze)
 
 
 if __name__ == "__main__":

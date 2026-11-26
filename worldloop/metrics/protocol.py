@@ -9,6 +9,7 @@ on any panorama.
 from __future__ import annotations
 
 import functools
+import hashlib
 import math
 from pathlib import Path
 
@@ -50,6 +51,82 @@ def load_frames(case_dir: str | Path) -> list[np.ndarray]:
     files = sorted(fdir.glob("*.jpg")) or sorted(fdir.glob("*.png"))
     imgs = [cv2.imread(str(f)) for f in files]
     return [im for im in imgs if im is not None]
+
+
+def frame_integrity(frames: list[np.ndarray], cams: list | None = None) -> dict:
+    """Detect frames the exporter duplicated or rewound instead of generating.
+
+    A chunked streaming exporter must emit every generated frame exactly once.  A
+    swallowed chunk boundary repeats the previous frame; a stale buffer emits a frame
+    that is byte-identical to a much earlier one.  Repeating a frame is legal when the
+    commanded pose does not change (``static`` never moves, ``null_action`` and the
+    still phase of ``occlusion`` hold the camera), so the signal is *pose mismatch*:
+    a repeated frame whose commanded camera pose differs from the frame it copies.
+    ``rewound_frames`` counts frames the exporter replaced with a duplicate of an
+    earlier frame while the commanded camera had moved on; ``rewound_frame_ratio``
+    normalises that by the rollout length and is the flag the runner reports.
+    """
+    empty = {
+        "dup_frames": 0,
+        "dup_ratio": 0.0,
+        "max_identical_run": 0,
+        "first_dup_frame": None,
+        "rewound_frames": 0,
+        "rewound_frame_ratio": 0.0,
+        "rewound_motion_deg": 0.0,
+    }
+    if not frames:
+        return empty
+    digests = [hashlib.md5(fr.tobytes()).hexdigest() for fr in frames]
+    seen: dict[str, int] = {}
+    repeats = 0
+    first_dup = None
+    for i, d in enumerate(digests):
+        if d in seen:
+            repeats += 1
+            if first_dup is None:
+                first_dup = i
+        else:
+            seen[d] = i
+    run = best = 1
+    for a, b in zip(digests, digests[1:]):
+        run = run + 1 if a == b else 1
+        if run > best:
+            best = run
+
+    rewound = 0
+    lost = 0.0
+    total = 0.0
+    if cams is not None:
+        limit = min(len(digests), len(cams))
+        first: dict[str, int] = {}
+        for i in range(limit):
+            first.setdefault(digests[i], i)
+
+        def pose_gap(i: int, j: int) -> float:
+            dy = math.degrees(_wrap(float(cams[i].yaw) - float(cams[j].yaw)))
+            dp = math.degrees(float(cams[i].pitch) - float(cams[j].pitch))
+            return math.hypot(dy, dp)
+
+        for i in range(1, limit):
+            total += pose_gap(i, i - 1)
+            j = first.get(digests[i])
+            if j is None or j >= i:
+                continue
+            gap = pose_gap(i, j)
+            # 1.5 deg is far above sub-pixel jitter and well below any real pan step
+            if gap > 1.5:
+                rewound += 1
+                lost += gap
+    return {
+        "dup_frames": repeats,
+        "dup_ratio": repeats / len(digests),
+        "max_identical_run": best,
+        "first_dup_frame": first_dup,
+        "rewound_frames": rewound,
+        "rewound_frame_ratio": rewound / len(digests),
+        "rewound_motion_deg": lost,
+    }
 
 
 def _cams(case: dict) -> tuple[list[PanoCamera], A.PoseTimeline]:
@@ -361,6 +438,9 @@ def score_case(
             out["null_motion_px"] = float(np.mean(np.hypot(np.array(dx), np.array(dy))))
         out["null_dino_drift"] = float(np.mean(np.maximum(0.0, 1.0 - emb @ ref))) if n > 0 else 0.0
 
+    # ---- exporter sanity -------------------------------------------------
+    out.update(frame_integrity(frames, cams))
+
     return out
 
 
@@ -447,22 +527,142 @@ def _pre_cutoff_frames(case: dict, prefix_seconds: float) -> int:
     return max(0, int(round(prefix_seconds * fps)))
 
 
+def _window_cutoffs(case: dict, prefix_seconds: float) -> tuple[int, int]:
+    """Frame indices where the intervention starts and where the return starts."""
+    fps = float(case["fps"])
+    t = 0
+    cut_inter: int | None = None
+    cut_ret: int | None = None
+    for s in case.get("segments") or []:
+        tag = s.get("tag") if isinstance(s, dict) else getattr(s, "tag", None)
+        sec = float(s["seconds"] if isinstance(s, dict) else s.seconds)
+        k = max(1, int(round(sec * fps)))
+        if tag == "pre":
+            t += k
+            cut_inter = t
+        elif tag == "intervention" and cut_inter is not None and cut_ret is None:
+            t += k
+            cut_ret = t
+        else:
+            t += k
+    pre = _pre_cutoff_frames(case, prefix_seconds)
+    if cut_inter is None:
+        cut_inter = pre
+    if cut_ret is None:
+        cut_ret = cut_inter + max(1, int(round(prefix_seconds * fps)))
+    return cut_inter, cut_ret
+
+
+def cf_pair_stats(ea: np.ndarray, eb: np.ndarray, cut_inter: int, cut_ret: int) -> dict:
+    """Windowed divergence between two branches that shared a no-op prefix.
+
+    ``ea``/``eb`` are L2-normalised embeddings of the two rollouts.  The three windows
+    the protocol defines are measured separately, because averaging them together hides
+    the one signal that matters: a model that follows the command diverges while the
+    command is applied and *re-converges* once the reversing command undoes it.
+
+    ``pre``       - before the intervention; both branches must agree, so ~0 for any
+                    deterministic model and larger for a stochastic one.
+    ``inter``     - while the commanded action is applied; this is the response to it.
+    ``ret``       - after the reversing action; near ``pre`` again for a model that
+                    honours the command.
+
+    The legacy ``asr = post / pre`` is retained for audit but is *not* used for scoring:
+    it divides by a quantity that is legitimately zero, so it saturates at its cap for
+    every deterministic model and cannot rank models.  See ``cf_action_sep`` and
+    ``cf_null_drift`` below for the two unbounded, comparable quantities.
+    """
+    n = min(len(ea), len(eb))
+    ci, cr = min(cut_inter, n), min(cut_ret, n)
+    dist = np.maximum(0.0, 1.0 - np.sum(ea[:n] * eb[:n], axis=-1))
+    pre = float(np.mean(dist[:ci])) if ci > 0 else 0.0
+    inter = float(np.mean(dist[ci:cr])) if cr > ci else 0.0
+    ret = float(np.mean(dist[cr:])) if n > cr else 0.0
+    post = float(np.mean(dist[ci:])) if n > ci else 0.0
+    asr = post / max(pre, 1e-3)
+    return {
+        "pre": pre,
+        "inter": inter,
+        "ret": ret,
+        "post": post,
+        "asr": asr,
+        "asr_capped": float(min(asr, 100.0)),
+    }
+
+
+def cf_group_metrics(
+    embs: dict[str, np.ndarray],
+    cases: dict[str, dict],
+    null_id: str | None,
+    prefix_seconds: float = 2.0,
+) -> dict:
+    """Counterfactual sensitivity against the group's *own* no-op branch.
+
+    The protocol gives every group a branch that is commanded to do nothing.  Two
+    unbounded numbers then describe how well a model attributes change to the command:
+
+    ``cf_action_sep``  - DINO distance between an action branch and the no-op branch
+                         during the intervention window.  A model that ignores the
+                         action scores 0; a faithful one scores what the geometry
+                         implies (oracle: 0.17-0.36).
+    ``cf_null_drift``  - DINO distance between the no-op branch and its own first
+                         frame, after the prefix.  This is change *without* a command:
+                         0 for a model that renders a stable world, large for one that
+                         hallucinates motion (oracle: 0.00, yume: 0.50, wan: 0.96).
+
+    Reporting both keeps "follows the command" separable from "does not drift", which a
+    single ratio conflates.
+    """
+    ids = sorted(embs)
+    if not ids:
+        return {}
+    n = min(len(e) for e in embs.values())
+    cuts = {cid: _window_cutoffs(cases[cid], prefix_seconds) for cid in ids}
+    ci = min(cuts[c][0] for c in ids)
+    cr = min(cuts[c][1] for c in ids)
+    null_id = null_id if null_id in embs else None
+
+    out: dict = {"members": ids, "pairs": {}}
+    stats = {}
+    for i in range(len(ids)):
+        for j in range(i + 1, len(ids)):
+            stats[f"{ids[i]}__vs__{ids[j]}"] = cf_pair_stats(embs[ids[i]], embs[ids[j]], ci, cr)
+    out["pairs"] = stats
+
+    if null_id is not None:
+        acts = [cid for cid in ids if cid != null_id]
+        en = embs[null_id][:n]
+        if acts:
+            seps = []
+            rets = []
+            for a in acts:
+                ea = embs[a][:n]
+                if cr > ci:
+                    seps.append(float(np.mean(np.maximum(0.0, 1.0 - np.sum(ea[ci:cr] * en[ci:cr], axis=-1)))))
+                if n > cr:
+                    rets.append(float(np.mean(np.maximum(0.0, 1.0 - np.sum(ea[cr:] * en[cr:], axis=-1)))))
+            if seps:
+                out["cf_action_sep"] = float(np.mean(seps))
+            if rets:
+                out["cf_return_gap"] = float(np.mean(rets))
+        drift = np.maximum(0.0, 1.0 - (en @ en[0]))
+        out["cf_null_drift"] = float(np.mean(drift[ci:])) if n > ci else 0.0
+    return out
+
+
 def score_counterfactual(
     results_root: str | Path,
     cases: dict[str, dict],
     device: str = "cuda",
     prefix_seconds: float = 2.0,
 ) -> dict:
-    """Action Sufficiency Ratio on paired rollouts.
+    """Counterfactual sensitivity on paired rollouts.
 
     All rollouts in a group start from the same frame and share a ``"pre"``-tagged
-    (or ``prefix_seconds``) no-op prefix, then diverge:
-
-        ASR(A, B) = mean feature distance after divergence / mean before divergence
-
-    A model that ignores actions gets ASR ~= 0 (both branches look the same).  A model
-    that is pure noise gets ASR ~ 1, because the pre-divergence distance is already
-    large.  The ratio, not the raw divergence, is the reported number.
+    (or ``prefix_seconds``) no-op prefix, then diverge.  Each group contains a branch
+    commanded to do nothing; the two reported quantities are the action/no-op
+    separation during the intervention and the no-op branch's own drift.  See
+    :func:`cf_group_metrics` for why the old ``post/pre`` ratio is no longer scored.
     """
     root = Path(results_root)
     groups: dict[str, dict[str, Path]] = {}
@@ -471,41 +671,51 @@ def score_counterfactual(
         if not g:
             continue
         d = root / cid
-        if (d / "frames").is_dir():
+        if (d / "frames").is_dir() and load_frames(d):
             groups.setdefault(g, {})[cid] = d
 
     out: dict = {}
     for g, members in groups.items():
         if len(members) < 2:
             continue
-        embs = {}
-        for cid, d in members.items():
-            frames = load_frames(d)
-            if not frames:
-                continue
-            embs[cid] = dino_embed(frames, device=device)
+        embs = {cid: dino_embed(load_frames(d), device=device) for cid, d in members.items()}
+        embs = {k: v for k, v in embs.items() if len(v)}
         if len(embs) < 2:
             continue
-        n = min(len(e) for e in embs.values())
-        cut = min(n, min(_pre_cutoff_frames(cases[cid], prefix_seconds) for cid in embs))
-
-        def pair_stats(a: str, b: str) -> dict:
-            ea, eb = embs[a][:n], embs[b][:n]
-            dist = np.maximum(0.0, 1.0 - np.sum(ea * eb, axis=-1))
-            pre = float(np.mean(dist[:cut])) if cut > 0 else 0.0
-            post = float(np.mean(dist[cut:])) if n > cut else 0.0
-            # a fully deterministic model can have pre == 0; clamp instead of blowing up
-            asr = post / max(pre, 1e-3)
-            return {"pre": pre, "post": post, "asr": asr, "asr_capped": float(min(asr, 100.0))}
-
-        ids = sorted(embs)
-        stats = {}
-        for i in range(len(ids)):
-            for j in range(i + 1, len(ids)):
-                stats[f"{ids[i]}__vs__{ids[j]}"] = pair_stats(ids[i], ids[j])
-        out[g] = {"members": ids, "pairs": stats}
+        null_id = _find_null_branch(embs, cases)
+        entry = cf_group_metrics(embs, cases, null_id, prefix_seconds)
+        if entry:
+            out[g] = entry
 
     if out:
+        def _mean(key: str) -> float | None:
+            vals = [g[key] for g in out.values() if isinstance(g.get(key), (int, float))]
+            return float(np.mean(vals)) if vals else None
+
         asrs = [p["asr_capped"] for g in out.values() for p in g["pairs"].values()]
-        out["_summary"] = {"n_groups": len(out), "asr_mean": float(np.mean(asrs)), "asr_min": float(np.min(asrs))}
+        out["_summary"] = {
+            "n_groups": len(out),
+            "cf_action_sep": _mean("cf_action_sep"),
+            "cf_null_drift": _mean("cf_null_drift"),
+            "cf_return_gap": _mean("cf_return_gap"),
+            # legacy, audit only
+            "asr_mean": float(np.mean(asrs)) if asrs else 0.0,
+            "asr_min": float(np.min(asrs)) if asrs else 0.0,
+        }
     return out
+
+
+def _find_null_branch(embs: dict[str, np.ndarray], cases: dict[str, dict]) -> str | None:
+    """The member of a counterfactual group whose intervention is a no-op."""
+    for cid in sorted(embs):
+        for s in cases.get(cid, {}).get("segments") or []:
+            tag = s.get("tag") if isinstance(s, dict) else getattr(s, "tag", None)
+            if tag == "intervention":
+                act = s.get("action") if isinstance(s, dict) else getattr(s, "action", None)
+                if act in (None, "noop"):
+                    return cid
+                break
+    for cid in sorted(embs):
+        if cid.endswith("null"):
+            return cid
+    return None

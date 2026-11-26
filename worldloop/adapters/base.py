@@ -37,6 +37,10 @@ class ClosedLoopModel(abc.ABC):
     # smallest action duration the model can express; the runner never asks for less
     min_chunk_seconds: float = 0.5
     note: str = ""
+    # True when repeating the conditioning frame is the model's actual behaviour
+    # (a frozen-frame baseline), so a still rollout must not be read as an
+    # exporter failure.  Interactive models leave this False.
+    intentional_freeze: bool = False
 
     def __init__(self, **kwargs):
         self.records: list[StepRecord] = []

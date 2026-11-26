@@ -136,6 +136,26 @@ def cmd_score(args) -> int:
         print(f"[score] {cid} ok")
 
     agg = aggregate_metrics(scores)
+    broken = []
+    for s in scores:
+        meta_path = root / s["case_id"] / "meta.json"
+        frozen_by_design = False
+        if meta_path.exists():
+            frozen_by_design = bool(json.loads(meta_path.read_text(encoding="utf-8")).get("intentional_freeze"))
+        if not frozen_by_design and (s.get("rewound_frames") or 0) >= 3 and float(s.get("rewound_frame_ratio") or 0.0) >= 0.05:
+            broken.append(s)
+    if broken:
+        print(
+            f"[score] WARNING: {len(broken)} case(s) repeat a frame while the commanded camera "
+            "is still moving — the rollout exporter dropped motion, so these numbers measure "
+            "the exporter rather than the model:"
+        )
+        for s in broken:
+            print(
+                f"[score]   {s['case_id']}: rewound_motion={s['rewound_motion_deg']:.1f} deg "
+                f"({100.0 * float(s.get('rewound_motion_ratio') or 0.0):.1f}% of commanded), "
+                f"{s.get('rewound_frames')} replayed frames, longest_identical_run={s.get('max_identical_run')}"
+            )
     cf = score_counterfactual(root, by_id, device=args.device)
     if cf:
         agg["counterfactual"] = cf

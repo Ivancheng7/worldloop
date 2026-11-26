@@ -1,4 +1,4 @@
-# WorldLoop Protocol v0.1
+# WorldLoop Protocol v0.2
 
 > A closed-loop, simulator-grounded evaluation for **interactive** world models.
 
@@ -74,7 +74,7 @@ Every segment is a multiple of **2 s**, the native chunk of the evaluated models
 no adapter is ever forced to generate a partial chunk. Action primitives are
 model-agnostic chunk-level commands at 60°/s yaw and 30°/s pitch; adapters map them
 to keyboard tokens, camera poses, or latent actions. (`look_away`, a 4 s variant, is
-defined in `worldloop/cases.py` but not part of the v0.1 set — `occlusion` subsumes
+defined in `worldloop/cases.py` but not part of the active set — `occlusion` subsumes
 it.)
 
 ## 4. Metrics
@@ -114,14 +114,31 @@ turns or being rewarded by `|cos|` (the unclamped mean is also recorded as
 
 **Causality**
 
-`ASR(A, B) = mean_t D(emb^A_t, emb^B_t) for t > cut / max(mean_t D(...) for 0 < t < cut, 1e-3)`
-with `cut` the end of the shared 2 s no-op prefix, `D` = 1 − cosine, capped at 100.
+The protocol runs each scene as a triplet that shares a start frame and a 2 s no-op
+prefix, then diverges for 2 s (`turn_left` | `turn_right` | `noop`) and returns for
+2 s. Two quantities are measured on the DINOv2 embeddings, both on the intervention
+window (`16 < t ≤ 32` at 8 fps):
 
-* ASR ≈ 0 → the model ignores the action (both branches are the same world).
-* ASR ≈ 1 → the divergence is as large before the intervention as after it, i.e.
-  the model is dominated by noise.
-* ASR > 1 with a small pre-divergence distance is the signature of a model that is
-  both **deterministic** and **action-sensitive**.
+| metric | definition | better |
+|---|---|---|
+| `cf_action_sep` | mean `1 − cos(emb^action_t, emb^null_t)` over the intervention window | ↑ |
+| `cf_null_drift` | mean `1 − cos(emb^null_t, emb^null_0)` over the intervention window | ↓ (0 ideal) |
+| `cf_return_gap` | how much of the separation survives the return segment | ↓ (0 ideal) |
+| `asr` (legacy) | `mean_t D(t > cut) / max(mean_t D(0 < t < cut), 1e-3)`, capped at 100 | — |
+
+`cf_action_sep` answers *does the branch depend on the action*, and `cf_null_drift`
+answers *is the no-op branch actually a control*. The pair is a 2×2: an
+action-sensitive, stable model separates and holds still; a frozen frame separates
+nothing; a model that regenerates the world every chunk separates only because it
+drifts everywhere, which `cf_null_drift` catches.
+
+`ASR` is retained for audit but **is no longer scored**. Its denominator is
+legitimately `0` for a deterministic renderer, so the ratio saturates at the `×100`
+cap for the oracle itself — on the four-model board, oracle (97) and a Yume-5B run
+(95) were indistinguishable on this axis purely as an artifact of the cap. The raw
+`pre`/`post` distances are still printed so the old number can be re-derived, and
+`cf_return_gap` keeps the "does the branch come back" signal that the old
+single-window `post` average mixed together with the intervention.
 
 **Cost** is measured, not inferred: chunks/s, mean and p95 latency per chunk,
 realtime factor (generated seconds per wall-clock second) and peak VRAM, all on the
@@ -132,7 +149,8 @@ same GPU.
 Raw metrics are the primary record. In `worldloop/report.py`, protocol-level means
 are aggregated across active protocols (`loop360`, `occlusion`, `drift` for control,
 revisit and drift metrics; `occlusion` and `loop360` for `permanence_dino`;
-`null_action` for `null_motion_px`; `counterfactual` for `asr_mean`) and folded into
+`null_action` for `null_motion_px`; `counterfactual` for `cf_action_sep` and
+`cf_null_drift`) and folded into
 four group scores on absolute 0–100 scales (each component clipped to `[0, 1]` and
 multiplied by `100`, where `100` ≈ what the analytic renderer achieves), plus the
 headline **World Score**:
@@ -141,9 +159,20 @@ headline **World Score**:
 Control     = 100 × mean( clip01(flow_cos), clip01(axis_purity), max(0, 1 − switch_latency_frames / 8) )
 Memory      = 100 × mean( clip01(revisit_dino), clip01(revisit_ssim), clip01(permanence_dino) )
 Stability   = 100 × mean( max(0, 1 − null_motion_px / 8), max(0, 1 − |drift_slope_per_s| / 0.05) )
-Causality   = 100 × clip01( ASR / (ASR + 3) )        # None ("-") if counterfactual was not run
-World Score = sqrt( Control × Memory )
+Causality   = 100 × clip01( sep / 0.25 ) × 1 / (1 + max(0, drift) / 0.25)
+              # sep, drift = mean over counterfactual groups of cf_action_sep / cf_null_drift
+World Score = sqrt( Control × Memory )               # Causality is None ("-") if counterfactual was not run
 ```
+
+`Causality` is a product rather than a mean because the two halves fail
+independently: a frozen frame has perfect specificity and no sensitivity, and a
+drifting generator buys sensitivity with drift, which collapses its specificity. A
+product is `0` when either half fails, which is the honest reading of the protocol —
+an average would let each failure be half-credited by the other working component.
+The `0.25` scale is calibrated against the measured DINOv2 distance between two
+*different* panoramas on this dataset (0.79 mean over 15 scene pairs), so a separation
+of 0.25 is roughly a third of a scene change; the same number as the drift
+half-credit means "the no-op branch has wandered a third of the way to another room".
 
 Within each group, defined components are averaged; if a group other than
 `Causality` has no measurable component (for example, a frozen frame produces no
@@ -152,7 +181,9 @@ not run for a model, `Causality` is reported as `-` (not evaluated).
 
 The thresholds encode what counts as failure: a direction switch taking longer than
 1 s (`8` frames at 8 fps), feature drift of `0.05/s` (total forgetting within ~20 s),
-motion of `8 px/frame` under a null action, and an `ASR` half-saturation at `3`.
+motion of `8 px/frame` under a null action, and a counterfactual separation or no-op
+drift of `0.25` DINOv2 cosine distance (~a third of the 0.79 measured between two
+*different* scenes in this dataset).
 
 Group scores are *not* oracle ratios. A ratio against a perfect renderer is
 uninformative for pixel metrics — the oracle's LPIPS is 0.006, so a perfectly
@@ -197,5 +228,7 @@ negative control.
 * **One scene per case.** No multi-object interaction, no agent embodiment.
 * **Probes are image regions, not object instances.** No instance segmentation or
   amodal reasoning.
-* **Stochasticity.** Rollouts use a fixed seed, but seeds are model-specific; ASR
-  is designed to be robust to the pre-divergence noise floor.
+* **Stochasticity.** Rollouts use a fixed seed, but seeds are model-specific. The
+  counterfactual pair shares the seed and the start frame, so the no-op branch's drift
+  (`cf_null_drift`) is a direct measure of that model's own noise floor, which is why
+  it is scored rather than assumed away.

@@ -1,25 +1,41 @@
-# WorldLoop v0.1 — results
+# WorldLoop v0.2 — results
 
-Run date 2026-11-13/14 · one RTX 5060 Ti (16 GB, sm_120) · 1280×720, 8 fps timeline · 25 cases
+Run date 2026-11-13 (control baselines) / 2026-11-25 (interactive model) · one RTX 5060 Ti
+(16 GB, sm_120) · 1280×720, 8 fps timeline · 25 in-distribution + 15 out-of-distribution cases
 
 Four systems were evaluated with the same harness. Two are real models, two are
-calibration instruments.
+calibration instruments. Every row states its own `n`; nothing is averaged across
+models with different coverage.
 
 | system | kind | params | where | coverage |
 |---|---|---|---|---|
-| `oracle_sim` | analytic panorama renderer | — | CPU | 25 cases (all) |
-| `static` | degenerate (freezes frame 0) | 0 | CPU | 25 cases (all) |
-| `wan2.1_t2v_1.3b` | text-to-video, **no action input** | 1.3 B | local 16 GB | 12 cases (3 scenes × 3 protocols + counterfactual) |
-| `yume_5b` | interactive world model | 5 B | local 16 GB | 15 cases (4 scenes × 3 protocols + counterfactual) |
+| `oracle_sim` | analytic panorama renderer | — | CPU | 25 / 25 in-dist | 
+| `static` | degenerate (freezes frame 0) | 0 | CPU | 25 / 25 in-dist |
+| `wan2.1_t2v_1.3b` | text-to-video, **no action input** | 1.3 B | local 16 GB | 12 / 12 (4 scenes × 3 protocols; counterfactual on 1 group) |
+| `yume_5b` | interactive world model | 5 B | local 16 GB | 19 / 25 (4 scenes × 3 protocols + drift + counterfactual on 2 groups) |
+| `oracle_sim_ood` | same renderer, held-out scenes | — | CPU | 15 / 15 OOD |
+| `static_ood` | same degenerate baseline, held-out scenes | 0 | CPU | 15 / 15 OOD |
 
 ## Leaderboard
 
-| model | Control | Memory | Stability | Causality | **World Score** |
-|---|---|---|---|---|---|
-| `oracle_sim` | 99.9 | 99.2 | 94.1 | 97.1 | **99.6** |
-| `yume_5b` | 81.4 | 34.9 | 0.0 | 92.5 | **53.3** |
-| `wan2.1_t2v_1.3b` | 27.5 | 26.1 | 74.5 | 0.0 | **26.8** |
-| `static` | 5.7 | 99.2 | 99.9 | 0.0 | **23.8** |
+In-distribution (`±` is the bootstrap standard deviation, 2 000 draws resampling cases
+within each protocol; the 95 % interval is roughly `±1.96×` that — see *Uncertainty*
+below):
+
+| model | n | Control | Memory | Stability | Causality | **World Score** |
+|---|---|---|---|---|---|---|
+| `oracle_sim` | 25 | 95.8 ± 0.2 | 99.2 ± 0.1 | 94.1 ± 2.6 | 100 | **97.5 ± 0.1** |
+| `yume_5b` | 19 | 78.0 ± 3.5 | 31.4 ± 1.1 | 0.0 | 26.8 | **49.5 ± 1.4** |
+| `wan2.1_t2v_1.3b` | 12 | 27.5 ± 3.1 | 26.1 ± 2.6 | 76.1 ± 10.3 | 0.0 | **26.8 ± 2.4** |
+| `static` | 25 | 5.7 ± 1.1 | 99.2 ± 0.1 | 99.9 ± 0.0 | 0.0 | **23.8 ± 2.2** |
+
+Out-of-distribution calibration on four held-out panoramas (no drift case, so the
+Stability and Control floors are not comparable to the rows above):
+
+| model | n | Control | Memory | Stability | Causality | **World Score** |
+|---|---|---|---|---|---|---|
+| `oracle_sim_ood` | 15 | 95.8 ± 0.9 | 99.0 ± 0.2 | 92.3 ± 6.1 | 100 | **97.4 ± 0.4** |
+| `static_ood` | 15 | 13.5 ± 0.6 | 99.0 ± 0.2 | 99.8 ± 0.0 | 0.0 | **36.5 ± 0.8** |
 
 `World Score = sqrt(Control × Memory)` — a world model has to both move when told
 and keep the world it moved through. The geometric mean is what stops the two
@@ -28,116 +44,197 @@ chunk (Memory ~0).
 
 ### Raw numbers
 
-| model | flow_cos | flow_mag | revisit DINO | revisit SSIM | permanence | drift/s | null motion px | **ASR** |
-|---|---|---|---|---|---|---|---|---|
-| `oracle_sim` | 0.998 | 1.00 | 1.000 | 0.989 | 0.988 | −0.006 | 0.023 | 100 |
-| `static` | 0.057 | 0.00 | 1.000 | 0.989 | 0.988 | 0.000 | 0.023 | 0.000 |
-| `wan2.1_t2v_1.3b` | 0.143 | 0.026 | 0.144 | 0.443 | 0.195 | 0.017 | 1.37 | **0.000** |
-| `yume_5b` | 0.631 | 0.690 | 0.331 | 0.460 | 0.254 | 0.073 | **11.78** | **37.10** |
+| model | flow_cos | flow_mag | axis purity | switch lat. (f) | revisit DINO | revisit SSIM | permanence | drift/s | null motion px | CF action sep | CF null drift | ASR (legacy) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `oracle_sim` | 0.998 | 0.999 | 1.000 | 1.00 | 1.000 | 0.989 | 0.988 | −0.006 | 0.023 | 0.263 | 0.000 | 100 |
+| `yume_5b` | 0.969 | 0.843 | 0.997 | 5.00 | 0.352 | 0.400 | 0.191 | 0.076 | **25.60** | 0.212 | 0.540 | 99.8 |
+| `wan2.1_t2v_1.3b` | 0.143 | 0.026 | 0.408 | — | 0.144 | 0.443 | 0.195 | 0.017 | 1.12 | **0.000** | **0.957** | 0.000 |
+| `static` | 0.057 | 0.000 | — | — | 1.000 | 0.989 | 0.988 | −0.000 | 0.023 | 0.000 | 0.000 | 0.000 |
+| `oracle_sim_ood` | 1.000 | 0.999 | 1.000 | 1.00 | 0.999 | 0.989 | 0.981 | −0.008 | 0.026 | 0.483 | 0.000 | 100 |
+| `static_ood` | 0.135 | 0.000 | — | — | 0.999 | 0.989 | 0.981 | −0.000 | 0.026 | 0.000 | 0.000 | 0.000 |
 
 | model | s per 2 s chunk | realtime factor | peak VRAM |
 |---|---|---|---|
 | `oracle_sim` | 2.3 | 1.37× | — |
-| `static` | 0.007 | 417× | — |
-| `wan2.1_t2v_1.3b` | 91.5 | 0.027× | 4.7 GB |
-| `yume_5b` | 691 | 0.008× | ~15 GB (process) |
+| `static` | 0.007 | 455× | — |
+| `wan2.1_t2v_1.3b` | 96.9 | 0.027× | 4.9 GB |
+| `yume_5b` | 190 | 0.011× | 13.6 GB (allocated) |
 
-Per-protocol detail is in [`RESULTS_leaderboard.md`](RESULTS_leaderboard.md).
+Per-protocol detail, the coverage table every number is derived from, and the
+per-group counterfactual breakdown are in
+[`RESULTS_leaderboard.md`](RESULTS_leaderboard.md) (regenerated by the report
+command, byte-identical to a rerun).
+
+## Uncertainty
+
+Intervals are a 2 000-draw bootstrap that resamples cases *within each protocol*
+(preserving each protocol's case count) and re-runs the aggregation, so they answer
+"which of these two models would I still separate on a different draw of the same
+four scenes". Two consequences worth stating instead of hiding:
+
+- **Causality has no meaningful post-hoc interval.** The statistic is a mean over
+  counterfactual *groups*, of which Yume has two; resampling groups apart is not a
+  replicate, so the bootstrap returns a degenerate interval. The per-group spread is
+  the honest uncertainty and it is large: Yume's action separation is 0.356 on
+  `abandoned_bakery` and 0.068 on `empty_warehouse_01`. Causality is reported as a
+  point estimate with that caveat, not with a `±`.
+- **Yume's Control interval is wide (78.0 ± 3.5)** because its four loop360 scenes
+  disagree substantially (`flow_mag` 0.70–1.33, see F1). The aggregate is real but
+  it is an average over a scene-dependent behaviour.
+
+## Figures
 
 ![loop360 across four systems](figures/sheet_loop360.png)
 
-*Same case, same start frame, four systems. Oracle returns to the start view.
-Yume turns (and blurs) but ends in a different room. Wan leaves the building
-entirely. Static never moves.*
+*Same case, same start frame, four systems. Oracle returns to the start view. Yume
+turns smoothly and plausibly but ends in a different room. Wan abandons the scene
+entirely after the first chunk. Static never moves.*
 
 ![drift](figures/drift.png)
 
 *Feature drift against the conditioning frame during the 360° loop. The oracle's
-U-shape is the signature of a persistent world: it drifts while facing away and
-comes back to ~0. Yume has the same shape but never returns, and shows a step at
-t = 2 s — a chunk boundary. Wan jumps to 0.86 in the first 0.5 s. Static is flat.*
+U-shape is the signature of a persistent world: it drifts while facing away and comes
+back to ~0 at t = 6 s. Yume rises monotonically to ~0.75 and never comes back. Wan
+jumps to 0.86 within 0.5 s. Static is flat.*
 
 ## Findings
 
-**F1 — Interactive models follow direction, not gain (H1 confirmed).**
-Yume's direction agreement is 0.764 on the full loop and 0.497 on the look-away,
-while its flow-magnitude ratio is 0.65–0.73: it turns the right way at roughly
-two-thirds of the commanded 60°/s. Direction and gain have to be scored separately;
-a single "action following" number would hide this.
+**F1 — Interactive models follow direction, and get the gain wrong (H1 refined).**
+With a working exporter, Yume's direction agreement is **0.969** overall (0.995 on
+the full loop, 0.915 on the look-away): it turns the right way. The *gain* is
+scene-dependent — flow-magnitude ratio 0.70 / 0.80 / 0.90 / **1.33** across four
+scenes, and the integrated yaw for a commanded 360° loop is 298° / 271° / 398° /
+**559°**. One scene over-rotates by 1.55×: the model looks like it is obeying, and
+still walks the world twice as far as it was told. Direction and gain have to be
+scored separately; a single "action following" number would have hidden this.
 
 **F2 — One 360° turn is enough to lose the world (H2 confirmed).**
-Revisit SSIM 0.460 / DINO 0.331 (four scenes) against 0.989 / 1.000 for the
-analytic renderer. The qualitative view agrees: after 6 s the model is in a
-*plausible* interior that is not the one it started in.
+Revisit SSIM 0.400 / DINO 0.352 (four scenes) against 0.989 / 1.000 for the analytic
+renderer. The qualitative view agrees: after 6 s the model is in a *plausible*
+interior that is not the one it started in. Per scene, revisit DINO ranges 0.058
+(brown_photostudio_02) to 0.324 — the failure is not uniform, which is why the
+aggregate carries ±.
 
 **F3 — A 4 s look-away is worse than a full turn (H3 confirmed).**
-Permanence 0.254 versus revisit DINO 0.331: objects that leave the frame for 4 s
-come back less faithfully than the whole scene does after 6 s of motion. Object
+Permanence 0.191 versus revisit DINO 0.352: objects that leave the frame for 4 s come
+back *less* faithfully than the whole scene does after 6 s of motion. Object
 permanence does not degrade gracefully — it collapses as soon as the content is out
 of view.
 
 **F4 — The model cannot stand still (new, not hypothesised).**
-Under `null_action` Yume produces **11.78 px/frame** of image motion (oracle: 0.023,
-i.e. RAFT noise; Wan: 1.37). Told to hold the camera, it keeps panning. A world
-model that cannot represent "no change" cannot be used as an environment for a
-policy: the policy's own no-op becomes an action.
+Under `null_action` Yume produces **25.6 px/frame** of image motion (oracle: 0.023 —
+i.e. RAFT noise on identical frames; Wan: 1.12). Told to hold the camera, it pans by
+10.5 / 37.5 / 34.8 / 19.6 px/frame per scene and integrates up to **+93.9°** of yaw
+while commanded to 0°. A world model that cannot represent "no change" cannot be used
+as an environment for a policy: the policy's own no-op becomes an action. This is now
+measured on ten independent episodes, not one.
 
-**F5 — Causality is the cleanest separator (H4 confirmed).**
-Counterfactual triplets (same start frame and seed: turn left / turn right /
-no-op) give **ASR = 37.1** for Yume with a pre-divergence distance of 0.002 — the
-branches are *deterministic* before the intervention and diverge strongly after it.
-Wan gives **ASR = 0.000**: its branches are byte-identical, which is exactly what
-"no action input" means. This is the number that answers "is this a world model or
-a video generator" without any reference video.
+**F5 — Causality separates world models from video generators, once the metric is
+not a ratio (H4 confirmed, metric redesigned).**
+Counterfactual triplets (same start frame and seed: turn left / turn right / no-op)
+are scored on two DINOv2 quantities. Action separation (does the branch depend on the
+action?) is 0.263 for the oracle, 0.212 for Yume, **0.000** for Wan — whose branches
+are byte-identical, which is exactly what "no action input" means. The second
+quantity, no-op drift (is the control branch actually a control?), is 0.000 / 0.540 /
+**0.957**. The product of the two, `100 · clip01(sep/0.25) · 1/(1 + drift/0.25)`,
+gives 100 / 26.8 / 0. It is the only axis that needs no reference video, and it is
+the only one where a frozen frame and a scene-replacing generator both score 0
+instead of one of them scoring well.
+
+The old `ASR` (post/pre distance ratio, capped at 100) is retained for audit only.
+Its denominator is legitimately 0 for a deterministic renderer, so the oracle itself
+saturated at the cap and was indistinguishable from a Yume run that scored 95 on the
+same axis. That number is in the raw table as `ASR (legacy)` and does not enter any
+group score.
 
 **F6 — The negative control behaves exactly as designed (H5 confirmed).**
-Wan2.1-T2V has no action input: direction agreement 0.069–0.216 (noise floor),
-magnitude ratio 0.026, and it replaces the scene wholesale (revisit DINO 0.144).
-Its Stability score is nevertheless 74.5 — a still-ish video is "stable" — which is
-precisely why the World Score is a geometric mean and not an average.
+Wan2.1-T2V has no action input: direction agreement 0.143 (noise floor), magnitude
+ratio 0.026, and it replaces the scene wholesale (revisit DINO 0.144). Its Stability
+score is nevertheless 76.1 — a still-ish video is "stable" — which is precisely why
+the World Score is a geometric mean and not an average, and why Stability alone
+cannot be a headline.
 
 **F7 — The degenerate baseline is the honest test of the metric.**
-`static` scores 99.2 on Memory and 99.9 on Stability by never moving. It gets
-World Score 23.8, below both real models. Any consistency benchmark without a
-control axis can be won by a frozen frame; this one cannot.
+`static` scores 99.2 on Memory and 99.9 on Stability by never moving. It gets World
+Score 23.8, below both real models. Any consistency benchmark without a control axis
+can be won by a frozen frame; this one cannot. Its Causality is 0 by construction
+(the action branches are byte-identical), which is the check that the causality axis
+is not passable by sitting still.
 
 **F8 — Cost is the quiet constraint.**
-Yume needs **691 s to generate 2 s of video** (0.008× realtime, ~120× slower than
-real time) on a 16 GB consumer card at 544×960 / 4 sampling steps, including a
-~150 s weight load per case. The "runs on a 16 GB GPU" claim is about *fitting*, not
-about being interactive. Wan is ~7× faster and still ~37× slower than realtime.
+Yume needs **190 s to generate 2 s of video** (0.011× realtime, ~90× slower than real
+time) on a 16 GB consumer card at 544×960 / 4 sampling steps; a full 18 s drift
+episode took 1 889 s. The "runs on a 16 GB GPU" claim is about *fitting*, not about
+being interactive. Wan is ~2× faster per chunk and still ~37× slower than realtime.
+
+**F9 — An exporter bug can win a benchmark, and now it cannot hide.**
+The first Yume run (2026-11-13) exported its frames through a buffer-reuse bug: every
+episode froze for 7 frames at the first chunk boundary and then replayed its own
+opening frames. The result was *flattering* — the frozen frames show a real,
+well-lit render, so the fidelity metrics barely moved while the model looked calmer
+than it was (null motion 11.8 px instead of 25.6). It was caught by hashing frames,
+not by looking at a score: four independently generated cases contained a
+byte-identical frame. Every case now carries a `frame_integrity` block
+(`dup_frames`, `max_identical_run`, `rewound_frames`, `rewound_motion_deg`) and
+`score` prints a warning when a non-frozen model repeats a frame while the commanded
+camera is still moving. The v0.1 Yume numbers that appear in earlier notes are
+withdrawn; the rows above are a clean 19-case re-run.
 
 ## Calibration
 
 The oracle is the analytic renderer of the same panorama; it is the ceiling every
 metric must be able to reach, and it does: `flow_cos` 0.998, `revisit_ssim` 0.989,
-`permanence` 0.988, `null_motion` 0.023 px, World Score 99.6. Reaching exactly 100
-is impossible by construction (RAFT noise on identical frames, JPEG rounding),
+`permanence` 0.988, `null_motion` 0.023 px, World Score **97.5**. Reaching exactly
+100 is impossible by construction (RAFT noise on identical frames, JPEG rounding),
 which is why the group scores are absolute rather than oracle ratios.
+
+The OOD split is a *calibration*, not a leaderboard row: it re-runs the two
+non-learned instruments on four held-out panoramas (a hotel room, the Lebombo
+mountains, Venice at sunset, city rooftops). The oracle holds — World Score 97.4
+against 97.5 in-distribution — losing a little Memory (permanence 0.981 vs 0.988) and
+Stability (92.3 vs 94.1), the latter because the split has no `drift` episode whose
+near-zero slope would pull the mean down. The static floor, by contrast, moves a lot:
+Control 5.7 in-distribution versus **13.5** OOD. Two reasons, both structural — the
+missing `drift` case removes a legitimate 0.0 from the indoor Control mean, and
+outdoor/night panoramas give RAFT more spurious flow (static's occlusion `flow_cos`
+is 0.171 indoors and 0.269 OOD). The consequence for reading the board: a difference
+in Control below ~10 points between an in-distribution and an OOD number is not
+evidence of anything.
 
 ## Threats to validity
 
 1. **Sampling settings.** Yume ran at 544×960 / 4 steps for time, not at its best
    quality; absolute numbers are a lower bound on the model. The *pattern*
-   (direction ✓, persistence ✗, null action ✗) is not a sampling artifact — all
-   three appear in the qualitative frames as well.
-2. **Coverage.** 4 scenes for Yume, 3 for Wan. This is a protocol demonstration,
-   not a leaderboard; every number carries its `n_cases`.
+   (direction ✓, gain ✗, persistence ✗, null action ✗) is not a sampling artifact —
+   all four appear in the qualitative frames as well.
+2. **Coverage.** 19 of 25 cases for Yume (4 of 6 scenes, but both counterfactual groups),
+   12 of 25 for Wan (4 of 6 scenes, one counterfactual group). This is a protocol
+   demonstration, not a leaderboard; every row states its `n` and its bootstrap
+   spread, and leaving a case out changes the aggregate (see F2's per-scene range).
 3. **The negative control is not the official Wan2.1.** The text encoder is a local
    fp8→bf16 conversion of a umT5-XXL fine-tune, not the official fp32 encoder (the
    download would not fit the time budget). DiT and VAE are official. This affects
-   the *quality* of Wan's video, not the fact that it ignores actions (verified:
-   the same seed and prompt produce byte-identical frames for different actions,
-   hence ASR = 0.000).
+   the *quality* of Wan's video, not the fact that it ignores actions (verified: the
+   same seed and prompt produce byte-identical branches for different actions).
 4. **Action gain is not calibrated per model.** The 60°/s command is mapped to each
-   model's native interface without tuning; `flow_mag_ratio` exists to expose that
-   mismatch rather than hide it.
+   model's native interface without tuning; `flow_mag_ratio` and the integrated yaw
+   exist to expose that mismatch rather than hide it (F1).
 5. **RAFT on generated video** is noisy; pixels with |GT| < 1.5 px are masked, the
    magnitude ratio uses a median, and direction agreement is magnitude-weighted and
-   computed per segment (a protocol that turns right then left would otherwise
-   cancel itself out).
-6. **ASR is a ratio.** A perfectly deterministic model can drive the denominator to
-   ~0, so the raw pre/post distances are reported alongside it.
+   computed per segment (a protocol that turns right then left would otherwise cancel
+   itself out).
+6. **The counterfactual scale is a fixed constant.** `0.25` DINOv2 cosine is set from
+   the measured distance between two *different* panoramas in this dataset (0.79 mean,
+   15 scene pairs), so it is "a third of a scene change". It is a calibration, not a
+   physical unit, and one scene pair in this dataset sits as low as 0.61.
+7. **`switch_latency_frames` comes from one protocol only.** The counterfactual
+   branches are the only ones whose action changes mid-episode, so the latency
+   component of Control rests on their n, not on the full case count.
+8. **Stale-image risk is real but now instrumented.** The v0.1 numbers were not
+   reproducible from their own frames (F9). The defence is `frame_integrity` plus
+   `--force`-free reruns that skip cases with an existing `meta.json`: a partial
+   rerun silently mixes old and new rollouts, so the figures and the report must be
+   regenerated from the same tree that produced the metrics.
 
 ## Not evaluated, and why
 
@@ -152,21 +249,39 @@ which is why the group scores are absolute rather than oracle ratios.
 | Cosmos 3 Nano (16 B) | positioned for RTX Pro 6000 / H100 |
 | Genie 3 | closed weights |
 
+Yume-5B is also not evaluated OOD: 15 cases ≈ 2.5 h of GPU, and the OOD split's
+purpose here is to calibrate the *instruments*, not to add a second leaderboard.
+
 ## Reproduce
 
 ```bash
 python scripts/fetch_panos.py --out data/panos --n 10
 python -m worldloop.cli gen-cases --n-panos 6 --out cases
 python -m worldloop.cli run   --model oracle --out results/oracle_sim
+python -m worldloop.cli run   --model oracle --cases cases_ood/cases.json --out results/oracle_sim_ood
 python -m worldloop.cli run   --model static --out results/static
+python -m worldloop.cli run   --model static --cases cases_ood/cases.json --out results/static_ood
 python -m worldloop.cli run   --model wan  --panos abandoned_bakery,empty_warehouse_01,studio_small_03 \
     --steps 6 --out results/wan_t2v
 python -m worldloop.cli run   --model wan  --cases-filter abandoned_bakery__cf --steps 6 --out results/wan_t2v
 python -m worldloop.cli run   --model yume --panos abandoned_bakery,empty_warehouse_01,studio_small_03,brown_photostudio_02 \
     --steps 4 --resolution 544x960 --model-python .venv_yume/Scripts/python.exe --out results/yume_5b
-python -m worldloop.cli run   --model yume --cases-filter abandoned_bakery__cf \
+python -m worldloop.cli run   --model yume --cases-filter __cf \
     --steps 4 --resolution 544x960 --model-python .venv_yume/Scripts/python.exe --out results/yume_5b
-python -m worldloop.cli score --results results/yume_5b
+python -m worldloop.cli score --results results/oracle_sim --cases cases/cases.json
+python -m worldloop.cli score --results results/yume_5b   --cases cases/cases.json
 python -m worldloop.cli report --results results/oracle_sim results/static results/wan_t2v results/yume_5b \
-    --out docs/RESULTS_leaderboard.md
+    results/oracle_sim_ood results/static_ood --out docs/RESULTS_leaderboard.md
+python scripts/make_figures.py results/oracle_sim results/static results/wan_t2v results/yume_5b
 ```
+
+Notes on the commands, all learned the hard way:
+`run` skips a case whose `meta.json` already exists, so a re-run needs `--force` or a
+clean output directory — and a partial re-run mixes rollouts from two exporters (F9).
+`run --model yume` must be preceded by killing stray `yume_cli.py --serve` processes:
+two 5 B servers do not fit in 16 GB and the failure surfaces as a CUDA access
+violation, not as an out-of-memory error. The adapter now refuses to start below
+14 GB of free VRAM and names the stray PIDs; `WORLDLOOP_MIN_FREE_VRAM_GB=0` disables
+that check. `score` needs the GPU (DINOv2, RAFT, LPIPS) and must not run while a
+generation job owns the card. `score` re-reads frames, so it is also the step that
+would expose a stale `metrics.json`.

@@ -1,4 +1,4 @@
-# WorldLoop Case Set v0.1 — dataset card
+# WorldLoop Case Set v0.2 — dataset card
 
 ## What it is
 
@@ -72,8 +72,21 @@ Generation is deterministic: same panoramas + same code ⇒ byte-identical
 
 There is no train/test split because nothing is trained. The un-used panoramas
 (`hotel_room`, `lebombo`, `venice_sunset`, `modern_buildings`) form an optional
-**OOD split** — scenes with different lighting (night sky, outdoor sunset) that
-stress the model's prior rather than its memory.
+**OOD split** (`cases_ood/cases.json`, 15 cases) — scenes with different lighting
+(night sky, outdoor sunset) that stress the model's prior rather than its memory.
+
+| protocol | n | note |
+|---|---|---|
+| `loop360` | 4 | one per OOD scene |
+| `occlusion` | 4 | one per OOD scene |
+| `null_action` | 4 | one per OOD scene |
+| `counterfactual` | 3 | one group (`hotel_room`), not two |
+| `drift` | 0 | not in the OOD split — its absence changes the Static floor |
+
+The OOD split is deliberately *not* a stratified copy of the core set: it has no
+`drift` case and only one counterfactual group, so per-protocol group scores are
+not directly comparable across splits. `docs/RESULTS.md` §OOD calibration reports
+the two calibration instruments on it and what that means for reading OOD numbers.
 
 ## Licence
 

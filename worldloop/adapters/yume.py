@@ -37,6 +37,94 @@ from .base import ClosedLoopModel, StepRecord
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 SERVE_PREFIX = "__YUME_JSON__:"
 
+# Yume-5B needs ~13.6 GB of weights plus activations; refusing to start below this
+# keeps a leaked daemon from turning the next run into an access violation.  Set
+# ``WORLDLOOP_MIN_FREE_VRAM_GB=0`` to disable the check (multi-GPU hosts, stubs).
+MIN_FREE_VRAM_GB = 14.0
+
+
+def _gpu_free_gb() -> float | None:
+    """Free VRAM in GB, or ``None`` when it cannot be determined."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total,memory.used", "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    best = None
+    for line in out.splitlines():
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) != 2:
+            continue
+        try:
+            total, used = float(parts[0]), float(parts[1])
+        except ValueError:
+            continue
+        free = (total - used) / 1024.0
+        best = free if best is None else max(best, free)
+    return best
+
+
+def _stray_serve_pids() -> list[int]:
+    """PIDs of leftover ``yume_cli.py --serve`` daemons other than our parent chain."""
+    try:
+        import psutil  # local dev convenience; absent in a minimal install
+    except ImportError:
+        return []
+    pids = []
+    keep = {os.getpid(), os.getppid()}
+    for proc in psutil.process_iter(["pid", "cmdline"]):
+        try:
+            pid = proc.info["pid"]
+            cmd = proc.info.get("cmdline") or []
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+        if pid in keep:
+            continue
+        joined = " ".join(cmd)
+        if "yume_cli.py" in joined and "--serve" in joined:
+            pids.append(pid)
+    return pids
+
+
+def _preflight_gpu_free() -> None:
+    """Fail with a useful message instead of crashing inside the model process.
+
+    A ``yume_cli.py --serve`` daemon that outlived its run keeps ~10 GB resident.
+    Starting a second one then dies with a Windows access violation, which names
+    neither the daemon nor the memory pressure, so check before spawning.
+    """
+    try:
+        floor = float(os.environ.get("WORLDLOOP_MIN_FREE_VRAM_GB", MIN_FREE_VRAM_GB))
+    except ValueError:
+        floor = MIN_FREE_VRAM_GB
+    if floor <= 0.0:
+        return
+    free = _gpu_free_gb()
+    if free is None or free >= floor:
+        return
+    strays = _stray_serve_pids()
+    hint = ""
+    if strays:
+        listed = ", ".join(str(p) for p in strays)
+        hint = (
+            f" Leftover yume_cli --serve daemon(s) hold the memory: pid {listed}. "
+            "Kill them first, e.g. in PowerShell:\n"
+            "  Get-CimInstance Win32_Process -Filter \"name='python.exe'\" | "
+            "Where-Object { $_.CommandLine -like '*yume_cli.py*--serve*' } | Stop-Process -Force"
+        )
+    else:
+        hint = " Another process is using the GPU; free it before running Yume."
+    raise RuntimeError(
+        f"only {free:.1f} GB of GPU memory free, but Yume-5B needs about "
+        f"{floor:.0f} GB.{hint}\n"
+        "Set WORLDLOOP_MIN_FREE_VRAM_GB=0 to skip this check."
+    )
+
 # (keys, mouse): mouse pans the camera (yaw/pitch); W/A/S/D translate
 ACTION_CLI = {
     "turn_right": ("None", "right"),
@@ -98,6 +186,8 @@ class _YumeServer:
         self._recent_logs: collections.deque[str] = collections.deque(maxlen=120)
         self.model_load_s: float | None = None
         self.load_peak_allocated_gb: float | None = None
+
+        _preflight_gpu_free()
 
         cmd = [
             self.python,

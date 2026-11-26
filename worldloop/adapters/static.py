@@ -16,6 +16,7 @@ from .base import ClosedLoopModel
 class StaticModel(ClosedLoopModel):
     name = "static"
     note = "returns the conditioning frame forever"
+    intentional_freeze = True
 
     def __init__(self, fps: float = 8.0):
         super().__init__()

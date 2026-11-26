@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import math
+import os
 import pathlib
 import sys
 import tempfile
@@ -570,6 +571,8 @@ for raw in sys.stdin:
         sys.stdout.flush()
 """
     YumeModel.unload()
+    # the stub loads no weights, so the VRAM guard would only trip on an unrelated busy GPU
+    os.environ["WORLDLOOP_MIN_FREE_VRAM_GB"] = "0"
     with tempfile.TemporaryDirectory(prefix="wl_test_yume_serve_") as tmp:
         tmp_p = pathlib.Path(tmp)
         stub = tmp_p / "mock_yume_serve.py"

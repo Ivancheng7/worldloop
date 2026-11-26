@@ -44,9 +44,12 @@ there is — and the one that fails first in practice.
 Metrics per protocol: analytic-flow agreement (`flow_cos`, `flow_mag_ratio`,
 `axis_purity`, `switch_latency_frames`), revisit consistency (`revisit_dino`,
 `revisit_ssim`, `revisit_lpips`), probe permanence (`permanence_dino`), stability
-and drift (`null_motion_px`, `drift_slope_per_s`), and `ASR` (action sufficiency
-ratio) for the counterfactual triplets. Latency, realtime factor and peak VRAM are
-measured on the same GPU for every model.
+and drift (`null_motion_px`, `drift_slope_per_s`), plus two counterfactual
+measurements over the action triplets: `cf_action_sep` (how far the left/right
+branches move away from the no-op branch) and `cf_null_drift` (how far the no-op
+branch wanders from itself). Latency, realtime factor and peak VRAM are measured
+on the same GPU for every model. Every case also carries a `frame_integrity`
+block, so a broken exporter shows up as a metric instead of as a flattering score.
 
 ## Quick start
 
@@ -102,28 +105,38 @@ text-to-video model leaves the scene entirely, and the frozen baseline never mov
 
 ![oracle loop360](docs/figures/sheet_loop360.png)
 
-Headline findings from the v0.1 run (4 systems, 1× RTX 5060 Ti 16 GB, 15 cases for
-the interactive model, 12 for the control):
+Headline numbers (4 systems, 1× RTX 5060 Ti 16 GB; 25 cases for the non-learned
+baselines, 19 for the interactive model, 12 for the control). `±` is the bootstrap
+standard deviation over cases within each protocol (2 000 draws):
 
-| model | Control | Memory | Stability | Causality | **World Score** |
-|---|---|---|---|---|---|
-| `oracle_sim` (analytic) | 99.9 | 99.2 | 94.1 | 97.1 | **99.6** |
-| `yume_5b` (interactive WM) | 81.4 | 34.9 | 0.0 | 92.5 | **53.3** |
-| `wan2.1_t2v_1.3b` (no actions) | 27.5 | 26.1 | 74.5 | 0.0 | **26.8** |
-| `static` (frozen frame) | 5.7 | 99.2 | 99.9 | 0.0 | **23.8** |
+| model | n | Control | Memory | Stability | Causality | **World Score** |
+|---|---|---|---|---|---|---|
+| `oracle_sim` (analytic) | 25 | 95.8 ± 0.2 | 99.2 | 94.1 | 100 | **97.5 ± 0.1** |
+| `yume_5b` (interactive WM) | 19 | 78.0 ± 3.5 | 31.4 | 0.0 | 26.8 | **49.5 ± 1.4** |
+| `wan2.1_t2v_1.3b` (no actions) | 12 | 27.5 ± 3.1 | 26.1 | 76.1 | 0.0 | **26.8 ± 2.4** |
+| `static` (frozen frame) | 25 | 5.7 ± 1.1 | 99.2 | 99.9 | 0.0 | **23.8 ± 2.2** |
 
-- an interactive model follows the *direction* of a command (0.76) at roughly
-  two-thirds of the commanded *gain* (0.65–0.73) — the two must be scored separately;
-- one 360° turn is enough to lose the world: revisit SSIM 0.46 / DINO 0.33 vs
+- an interactive model follows the *direction* of a command well (0.97) and gets the
+  *gain* wrong by scene — 0.70–1.33 of the commanded rate, i.e. one scene integrates
+  559° of yaw for a commanded 360°. Direction and gain must be scored separately;
+- one 360° turn is enough to lose the world: revisit SSIM 0.40 / DINO 0.35 vs
   0.99 / 1.00 for the analytic renderer, and a 4 s look-away is even worse
-  (permanence 0.25);
+  (permanence 0.19);
 - told to hold the camera still, the same model still moves the image
-  **11.8 px/frame** (oracle: 0.02) — it cannot represent "no change";
-- causality is the cleanest separator: counterfactual branches give **ASR 37.1**
-  for the interactive model (deterministic, pre-divergence distance 0.002) and
-  exactly **0.000** for the text-to-video model, whose branches are byte-identical;
+  **25.6 px/frame** (oracle: 0.02, i.e. RAFT noise) and integrates up to +94° of yaw
+  while commanded to 0° — it cannot represent "no change";
+- causality is the cleanest separator, once it is not a distance *ratio*: over
+  counterfactual triplets the action branches separate from the no-op branch by
+  0.21 (oracle 0.26, text-to-video model exactly 0.000 — its branches are
+  byte-identical) while the no-op branch itself drifts 0.54 (oracle 0.00,
+  video model 0.96). Scored as a product because either half alone can be gamed;
 - a frozen frame wins Memory and loses Control, so the geometric-mean World Score
-  keeps both degenerate solutions at the bottom.
+  keeps both degenerate solutions at the bottom;
+- `frame_integrity` is part of every case: the v0.1 run of the interactive model was
+  withdrawn after four independently generated episodes were found to share a
+  byte-identical frame at a chunk boundary. The bug was *flattering* (frozen frames
+  score well on fidelity), which is why it is now a metric and a `score` warning
+  instead of a footnote.
 
 ## Repository layout
 
@@ -133,12 +146,12 @@ worldloop/
   actions.py       chunk-level action language → per-frame pose timeline
   cases.py         protocol definitions and case construction
   runner.py        closed-loop rollout
-  metrics/         flow, DINOv2 features, revisit, permanence, counterfactual ASR
+  metrics/         flow, DINOv2 features, revisit, permanence, counterfactual sep/drift
   adapters/        oracle, static, yume (keyboard WM), matrix_game_space (pose), wan_t2v
   report.py        leaderboard generation
 docs/PROTOCOL.md   the evaluation spec
 docs/DATASET.md    case-set card
-docs/RESULTS.md    v0.1 analysis (raw table in docs/RESULTS_leaderboard.md)
+docs/RESULTS.md    v0.2 analysis (raw table in docs/RESULTS_leaderboard.md)
 ```
 
 ## Limitations

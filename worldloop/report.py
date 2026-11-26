@@ -27,7 +27,9 @@ METRICS = {
     "permanence_dino": ("Permanence DINO", "memory", +1),
     "drift_slope_per_s": ("Drift / s", "stability", -1),
     "null_motion_px": ("Null motion px", "stability", -1),
-    "asr_mean": ("ASR", "causality", +1),
+    "cf_action_sep": ("CF action sep", "causality", +1),
+    "cf_null_drift": ("CF null drift", "causality", -1),
+    "asr_mean": ("ASR (legacy)", "causality", 0),
 }
 
 GROUPS = ["control", "memory", "stability", "causality"]
@@ -38,7 +40,15 @@ DRIFT_FAIL = 0.05
 LATENCY_FAIL = 8.0
 # motion under a null action beyond 8 px/frame is a failure
 NULL_MOTION_FAIL = 8.0
-# ASR saturation: ASR 3 already means "divergence tripled"
+# A commanded 2 s turn separates the analytic renderer from the no-op branch by
+# 0.17-0.36 DINO distance; 0.25 is "the command moved the view as much as the
+# geometry says it should".
+CF_SEP_REF = 0.25
+# Half-credit drift for the no-op branch: 0.25 DINO distance is roughly a third of the
+# 0.79 measured between two *different* panoramas.  Kept soft (1/(1+x)) so the axis
+# still ranks models between "perfectly still" and "regenerates the world".
+CF_NULL_DRIFT_HALF = 0.25
+# Legacy ASR saturation, retained only to display the old number.
 ASR_HALF = 3.0
 
 
@@ -82,7 +92,10 @@ def _extract(metrics: dict) -> dict:
     row["drift_slope_per_s"] = mean("drift_slope_per_s", control)
     row["null_motion_px"] = mean("null_motion_px", [proto.get("null_action", {})])
     cf = metrics.get("aggregate", {}).get("counterfactual", {})
-    row["asr_mean"] = mean("asr_mean", [cf.get("_summary", {})])
+    cf_sum = cf.get("_summary", {})
+    row["cf_action_sep"] = mean("cf_action_sep", [cf_sum])
+    row["cf_null_drift"] = mean("cf_null_drift", [cf_sum])
+    row["asr_mean"] = mean("asr_mean", [cf_sum])
     cost = metrics.get("aggregate", {}).get("cost", {})
     row["latency_s_mean"] = mean("latency_s_mean", [cost])
     row["realtime_factor"] = mean("realtime_factor", [cost])
@@ -114,10 +127,23 @@ def group_scores(row: dict) -> dict[str, float | None]:
     if drift is not None and not np.isnan(drift):
         add("stability", max(0.0, 1.0 - abs(drift) / DRIFT_FAIL))
 
-    asr = row.get("asr_mean")
-    if asr is not None and not np.isnan(asr):
-        asr_pos = max(0.0, float(asr))
-        add("causality", asr_pos / (asr_pos + ASR_HALF))
+    # Causality is an AND of two independent failures, not an average:
+    #   sensitivity - the action branches must separate from the no-op branch
+    #   specificity - the no-op branch must stay where it started
+    # A frozen frame has perfect specificity and no sensitivity; a drifting model gets
+    # separation only because it drifts everywhere, and its specificity collapses.  The
+    # product is 0 if either half fails, which is the honest reading of the protocol.
+    sep = row.get("cf_action_sep")
+    drift = row.get("cf_null_drift")
+    if sep is not None and drift is not None and not np.isnan(sep) and not np.isnan(drift):
+        sens = _clip01(float(sep) / CF_SEP_REF)
+        spec = 1.0 / (1.0 + max(0.0, float(drift)) / CF_NULL_DRIFT_HALF)
+        add("causality", float(sens * spec))
+    else:
+        # results predating the counterfactual rewrite only carry the legacy ASR
+        asr = row.get("asr_mean")
+        if asr is not None and not np.isnan(asr):
+            add("causality", max(0.0, float(asr)) / (max(0.0, float(asr)) + ASR_HALF))
 
     # a group with no measurable component scores zero: e.g. a model that never moves
     # cannot demonstrate control at all, and silently dropping the group would flatter it.
@@ -133,13 +159,35 @@ def group_scores(row: dict) -> dict[str, float | None]:
     return out
 
 
+def coverage(metrics: dict) -> tuple[int, dict[str, int]]:
+    """Cases actually scored, and how many per protocol.
+
+    Read from ``per_case`` rather than from the aggregate so a model that silently
+    dropped a case (a crashed run, an empty ``frames/`` directory) cannot claim the
+    coverage it was asked for.
+    """
+    per_case = metrics.get("per_case") or []
+    if isinstance(per_case, dict):
+        per_case = list(per_case.values())
+    counts: dict[str, int] = {}
+    for row in per_case:
+        proto = row.get("protocol") if isinstance(row, dict) else None
+        if proto:
+            counts[proto] = counts.get(proto, 0) + 1
+    return len(per_case), dict(sorted(counts.items()))
+
+
 def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop leaderboard") -> str:
     rows = {}
+    covs = {}
     for r in results:
         p = pathlib.Path(r) / "metrics.json"
         if not p.exists():
             continue
-        rows[pathlib.Path(r).name] = _extract(json.loads(p.read_text(encoding="utf-8")))
+        raw = json.loads(p.read_text(encoding="utf-8"))
+        name = pathlib.Path(r).name
+        rows[name] = _extract(raw)
+        covs[name] = coverage(raw)
 
     lines = [f"# {title}", ""]
     if not rows:
@@ -148,7 +196,15 @@ def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop 
         pathlib.Path(out_path).write_text("\n".join(lines), encoding="utf-8")
         return out_path
 
+    lines += ["## Coverage", ""]
+    lines.append("| model | cases | per protocol |")
+    lines.append("|---|---|---|")
+    for name, (n, counts) in covs.items():
+        detail = ", ".join(f"{k} {v}" for k, v in counts.items()) or "-"
+        lines.append(f"| `{name}` | {n} | {detail} |")
+
     header = ["model"] + [f"{METRICS[k][0]}" for k in METRICS]
+    lines += ["", "## Raw metrics", ""]
     lines.append("| " + " | ".join(header) + " |")
     lines.append("|" + "|".join(["---"] * len(header)) + "|")
     for name, row in rows.items():
@@ -193,13 +249,43 @@ def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop 
                 f"{_fmt(vals.get('null_motion_px'))} |"
             )
 
+    # counterfactual groups, listed per scene so the separation/drift pair is auditable
+    lines += ["", "## Counterfactual detail (per group)", ""]
+    has_cf = False
+    for r in results:
+        p = pathlib.Path(r) / "metrics.json"
+        if not p.exists():
+            continue
+        m = json.loads(p.read_text(encoding="utf-8"))
+        cf = m.get("aggregate", {}).get("counterfactual", {})
+        groups = {k: v for k, v in cf.items() if k != "_summary" and isinstance(v, dict)}
+        if groups and not has_cf:
+            lines.append("| model | group | action sep | null drift | return gap | legacy ASR |")
+            lines.append("|---|---|---|---|---|---|")
+            has_cf = True
+        for g, vals in sorted(groups.items()):
+            asrs = [pp.get("asr_capped", 0.0) for pp in (vals.get("pairs") or {}).values()]
+            lines.append(
+                f"| `{pathlib.Path(r).name}` | {g} | {_fmt(vals.get('cf_action_sep'))} | "
+                f"{_fmt(vals.get('cf_null_drift'))} | {_fmt(vals.get('cf_return_gap'))} | "
+                f"{_fmt(float(np.mean(asrs)) if asrs else None)} |"
+            )
+    if not has_cf:
+        lines.append("_no counterfactual runs_")
+
     lines += [
         "",
         "_Component definitions (all mapped to 0-100, 100 = a perfect analytic renderer):_",
         "_Control_ = mean(flow_cos, axis_purity, max(0, 1 − switch_latency/8)). ",
         "_Memory_ = mean(revisit_dino, revisit_ssim, permanence_dino). ",
         "_Stability_ = mean(max(0, 1 − null_motion/8), max(0, 1 − |drift/s|/0.05)). ",
-        "_Causality_ = ASR/(ASR+3); `-` means the counterfactual protocol was not run for that model. ",
+        "_Causality_ = clip01(mean CF action sep / 0.25) × 1/(1 + mean CF null drift / 0.25), "
+        "both means taken over counterfactual groups: the action branches must separate from "
+        "the no-op branch *and* the no-op branch must hold still. "
+        "`ASR (legacy)` = post/pre with a ×100 cap; it is kept for audit only and is no "
+        "longer scored, because `pre` is legitimately 0 for a deterministic model, which "
+        "saturates the ratio for every model that renders a stable prefix. "
+        "`-` means the counterfactual protocol was not run for that model. ",
         "_**World Score = sqrt(Control × Memory)** — a world model must both move when told "
         "and keep the world it moved through. This is deliberately a geometric mean: doing "
         "nothing scores Control 0, and regenerating a new world every chunk scores Memory ~0. ",

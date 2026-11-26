@@ -1,10 +1,10 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "worldloop"
-version = "0.1.0"
+version = "0.2.0"
 description = "Closed-loop, simulator-grounded benchmark for interactive world models"
 readme = "README.md"
 requires-python = ">=3.10"

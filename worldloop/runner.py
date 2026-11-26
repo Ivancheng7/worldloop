@@ -86,6 +86,7 @@ def run_case(
         "seed": seed,
         "wall_seconds": wall,
         "cost": model.cost_summary(),
+        "intentional_freeze": bool(getattr(model, "intentional_freeze", False)),
     }
     if hasattr(model, "meta") and callable(model.meta):
         meta["adapter"] = model.meta()
