@@ -47,9 +47,12 @@ Metrics per protocol: analytic-flow agreement (`flow_cos`, `flow_mag_ratio`,
 and drift (`null_motion_px`, `drift_slope_per_s`), plus two counterfactual
 measurements over the action triplets: `cf_action_sep` (how far the left/right
 branches move away from the no-op branch) and `cf_null_drift` (how far the no-op
-branch wanders from itself). Latency, realtime factor and peak VRAM are measured
-on the same GPU for every model. Every case also carries a `frame_integrity`
-block, so a broken exporter shows up as a metric instead of as a flattering score.
+branch wanders from itself). The three memory similarities are also reported
+relative to a negative-pair floor (`*_norm`), because a raw SSIM/DINO similarity is
+partly a statement about how smooth the imagery is; that floor-relative value is what
+gets scored. Latency, realtime factor and peak VRAM are measured on the same GPU for
+every model. Every case also carries a `frame_integrity` block, so a broken exporter
+shows up as a metric instead of as a flattering score.
 
 ## Quick start
 
@@ -111,17 +114,20 @@ standard deviation over cases within each protocol (2 000 draws):
 
 | model | n | Control | Memory | Stability | Causality | **World Score** |
 |---|---|---|---|---|---|---|
-| `oracle_sim` (analytic) | 25 | 95.8 ± 0.2 | 99.2 | 94.1 | 100 | **97.5 ± 0.1** |
-| `yume_5b` (interactive WM) | 19 | 78.0 ± 3.5 | 31.4 | 0.0 | 26.8 | **49.5 ± 1.4** |
-| `wan2.1_t2v_1.3b` (no actions) | 12 | 27.5 ± 3.1 | 26.1 | 76.1 | 0.0 | **26.8 ± 2.4** |
-| `static` (frozen frame) | 25 | 5.7 ± 1.1 | 99.2 | 99.9 | 0.0 | **23.8 ± 2.2** |
+| `oracle_sim` (analytic) | 25 | 95.8 ± 0.2 | 98.7 | 94.1 | 100 | **97.2 ± 0.1** |
+| `static` (frozen frame) | 25 | 5.7 ± 1.1 | 98.7 | 99.9 | 0.0 | **23.7 ± 2.2** |
+| `yume_5b` (interactive WM) | 19 | 78.0 ± 3.5 | 5.1 | 0.0 | 26.8 | **20.0 ± 3.2** |
+| `wan2.1_t2v_1.3b` (no actions) | 12 | 27.5 ± 3.1 | 3.9 | 76.1 | 0.0 | **10.3 ± 2.0** |
 
 - an interactive model follows the *direction* of a command well (0.97) and gets the
   *gain* wrong by scene — 0.70–1.33 of the commanded rate, i.e. one scene integrates
   559° of yaw for a commanded 360°. Direction and gain must be scored separately;
 - one 360° turn is enough to lose the world: revisit SSIM 0.40 / DINO 0.35 vs
   0.99 / 1.00 for the analytic renderer, and a 4 s look-away is even worse
-  (permanence 0.19);
+  (permanence 0.19). Measured against the *no-revisit* floor — the same instrument on
+  views 120°+ away from the start — Yume's revisit similarity is 0.35 against a 0.350
+  floor and its permanence 0.19 against 0.190: **it is no more similar to where it
+  started than to any other direction**. That is why its Memory is 5, not 31;
 - told to hold the camera still, the same model still moves the image
   **25.6 px/frame** (oracle: 0.02, i.e. RAFT noise) and integrates up to +94° of yaw
   while commanded to 0° — it cannot represent "no change";
@@ -130,8 +136,11 @@ standard deviation over cases within each protocol (2 000 draws):
   0.21 (oracle 0.26, text-to-video model exactly 0.000 — its branches are
   byte-identical) while the no-op branch itself drifts 0.54 (oracle 0.00,
   video model 0.96). Scored as a product because either half alone can be gamed;
-- a frozen frame wins Memory and loses Control, so the geometric-mean World Score
-  keeps both degenerate solutions at the bottom;
+- the frozen frame wins Memory outright and loses Control outright, so on the
+  geometric-mean World Score it now **edges out** the 5 B model (23.7 vs 20.0): a
+  model that turns but keeps nothing is not better than a model that keeps
+  everything and turns nothing. The world score is not a leaderboard of usefulness —
+  it is a product of two capacities, and this one is missing one of them;
 - `frame_integrity` is part of every case: the v0.1 run of the interactive model was
   withdrawn after four independently generated episodes were found to share a
   byte-identical frame at a chunk boundary. The bug was *flattering* (frozen frames
@@ -158,7 +167,11 @@ docs/RESULTS.md    v0.2 analysis (raw table in docs/RESULTS_leaderboard.md)
 
 Rotation-only camera motion (no translation ⇒ no physics/contact evaluation), 720p
 at 8 fps, one panorama per case, probes are image regions rather than segmented
-object instances. Details and rationale in `docs/PROTOCOL.md` §7.
+object instances. Coverage is 19 of 25 cases for the interactive model and 12 of 25
+for the control (both at 15/15 on the held-out set), so the numbers are a protocol
+demonstration, not an authoritative ranking. The memory floor is measured on each
+model's own frames, so it separates "no memory" from "no world consistency" only
+approximately. Details and rationale in `docs/PROTOCOL.md` §7.
 
 ## License
 

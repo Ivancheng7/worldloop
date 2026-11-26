@@ -98,12 +98,34 @@ turns or being rewarded by `|cos|` (the unclamped mean is also recorded as
 
 **Memory / persistence** (no GT needed)
 
+Every memory metric below is a *similarity*, and similarity has a data-dependent
+floor: smooth, low-texture imagery is similar to everything, so an absolute score
+mostly measures image statistics. Measured on Yume-5B, revisit DINO read 0.352 in
+distribution against its own 0.350 floor — i.e. no more similar to the start view than
+to a random other direction — and its out-of-distribution SSIM of 0.622 was tracking a
+0.572 floor. Each metric is therefore also reported floor-relative,
+`norm = clip01((raw − floor) / (1 − floor))`, and **the group score uses `norm`**, not
+`raw`.
+
 | metric | definition | better |
 |---|---|---|
 | `revisit_dino` | DINOv2 cosine between the first frame and the revisit frame at the same pose | ↑ |
 | `revisit_ssim` / `revisit_lpips` | pixel-level agreement of the two visits | ↑ / ↓ |
+| `revisit_dino_floor`, `revisit_ssim_floor` | same instrument, reference vs frames whose *commanded* camera is ≥120° away (no revisit happening) | ↓ is a smoother world |
+| `revisit_dino_norm`, `revisit_ssim_norm` | `(raw − floor) / (1 − floor)` | ↑ |
 | `permanence_dino` | mean DINOv2 cosine of probe patches, reference vs projected-back patch on revisit | ↑ |
+| `permanence_dino_floor` | probe A's reference patch vs probe B's projected direction in the revisit frame (unrelated parts of the same world) | ↓ |
+| `permanence_dino_norm` | `(permanence − floor) / (1 − floor)` | ↑ |
 | `drift_slope_per_s` | slope of `1 − cos(emb_t, emb_0)` over time | ↓ |
+
+The floor is self-contained: it needs no other case, no second rollout and no
+cross-split calibration, so it can be recomputed by anyone from a single rollout. A
+model whose imagery never moves with the command (a frozen frame) has no negative
+pair of its own; then the floor comes from the panorama itself, rendered 180° from the
+start pose, which credits the trivial memory the frozen baseline genuinely has and
+leaves its failure on the control axis where it belongs. Because a probe direction
+near the start view is not visible from 180° away, permanence uses a cross-probe floor
+instead of a far-frame one.
 
 **Stability**
 
@@ -150,19 +172,26 @@ Raw metrics are the primary record. In `worldloop/report.py`, protocol-level mea
 are aggregated across active protocols (`loop360`, `occlusion`, `drift` for control,
 revisit and drift metrics; `occlusion` and `loop360` for `permanence_dino`;
 `null_action` for `null_motion_px`; `counterfactual` for `cf_action_sep` and
-`cf_null_drift`) and folded into
-four group scores on absolute 0–100 scales (each component clipped to `[0, 1]` and
+`cf_null_drift`) and folded intofour group scores on absolute 0–100 scales (each component clipped to `[0, 1]` and
 multiplied by `100`, where `100` ≈ what the analytic renderer achieves), plus the
 headline **World Score**:
 
 ```
 Control     = 100 × mean( clip01(flow_cos), clip01(axis_purity), max(0, 1 − switch_latency_frames / 8) )
-Memory      = 100 × mean( clip01(revisit_dino), clip01(revisit_ssim), clip01(permanence_dino) )
+Memory      = 100 × mean( clip01(revisit_dino_norm), clip01(revisit_ssim_norm), clip01(permanence_dino_norm) )
+              # each *_norm = (raw − floor) / (1 − floor), floor measured on non-revisits (§4)
 Stability   = 100 × mean( max(0, 1 − null_motion_px / 8), max(0, 1 − |drift_slope_per_s| / 0.05) )
 Causality   = 100 × clip01( sep / 0.25 ) × 1 / (1 + max(0, drift) / 0.25)
               # sep, drift = mean over counterfactual groups of cf_action_sep / cf_null_drift
 World Score = sqrt( Control × Memory )               # Causality is None ("-") if counterfactual was not run
 ```
+
+`Memory` uses the floor-relative similarities, not the raw ones, because the raw ones
+are dominated by how smooth the model's imagery is: on Yume-5B the in-distribution
+revisit SSIM was *below* its own negative-pair floor, and the out-of-distribution
+apparent gain vanished once the floor was subtracted (see §4). A model that renders a
+frozen image still scores Memory ~98 — correctly, since it does keep what it saw; the
+whole failure of such a baseline lands on `Control`.
 
 `Causality` is a product rather than a mean because the two halves fail
 independently: a frozen frame has perfect specificity and no sensitivity, and a
@@ -218,7 +247,7 @@ timeline. Anything with a `step(action) -> frames` interface can be evaluated:
 keyboard-driven game models, camera-pose models, or a text-to-video model used as a
 negative control.
 
-## 7. Known limitations (v0.1)
+## 7. Known limitations (v0.2)
 
 * **Rotation only.** Translation would require depth; the panorama gives an exact
   rotating camera, not a moving one. Physics/contact is therefore out of scope —
@@ -228,6 +257,18 @@ negative control.
 * **One scene per case.** No multi-object interaction, no agent embodiment.
 * **Probes are image regions, not object instances.** No instance segmentation or
   amodal reasoning.
+* **The memory floor is model-dependent.** The negative-pair floor for the revisit
+  metrics is measured on the model's *own* frames at commanded angles 120°+ from the
+  start view, so a model that invents a new room as soon as it turns outward gets a
+  high floor and a low normalized score. That is the intended reading — a world whose
+  unseen parts share nothing with its start view cannot be "remembered" either — but
+  it does conflate "no memory" with "no world consistency". For a model whose imagery
+  never responds to the command (the frozen baseline) the floor falls back to the
+  panorama rendered 180° from the start pose, so that baseline is credited with the
+  trivial memory it actually has and its failure is left on the Control axis.
+* **Coverage is not a leaderboard.** The interactive model covers 19/25
+  in-distribution cases and the text-to-video control 12/25 (both 15/15 OOD). Every
+  aggregate is reported with its `n`, and a case left out changes the aggregate.
 * **Stochasticity.** Rollouts use a fixed seed, but seeds are model-specific. The
   counterfactual pair shares the seed and the start frame, so the no-op branch's drift
   (`cf_null_drift`) is a direct measure of that model's own noise floor, which is why

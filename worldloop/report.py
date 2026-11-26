@@ -22,9 +22,15 @@ METRICS = {
     "axis_purity": ("Axis purity", "control", +1),
     "switch_latency_frames": ("Switch latency (f)", "control", -1),
     "revisit_dino": ("Revisit DINO", "memory", +1),
+    "revisit_dino_floor": ("Revisit DINO floor", "memory", -1),
+    "revisit_dino_norm": ("Revisit DINO (floor-rel.)", "memory", +1),
     "revisit_ssim": ("Revisit SSIM", "memory", +1),
+    "revisit_ssim_floor": ("Revisit SSIM floor", "memory", -1),
+    "revisit_ssim_norm": ("Revisit SSIM (floor-rel.)", "memory", +1),
     "revisit_lpips": ("Revisit LPIPS", "memory", 0),
     "permanence_dino": ("Permanence DINO", "memory", +1),
+    "permanence_dino_floor": ("Permanence floor", "memory", -1),
+    "permanence_dino_norm": ("Permanence (floor-rel.)", "memory", +1),
     "drift_slope_per_s": ("Drift / s", "stability", -1),
     "null_motion_px": ("Null motion px", "stability", -1),
     "cf_action_sep": ("CF action sep", "causality", +1),
@@ -84,11 +90,17 @@ def _extract(metrics: dict) -> dict:
     row["axis_purity"] = mean("axis_purity", control)
     row["switch_latency_frames"] = mean("switch_latency_frames", switch_srcs)
     row["revisit_dino"] = mean("revisit_dino", control)
+    row["revisit_dino_floor"] = mean("revisit_dino_floor", control)
+    row["revisit_dino_norm"] = mean("revisit_dino_norm", control)
     row["revisit_ssim"] = mean("revisit_ssim", control)
+    row["revisit_ssim_floor"] = mean("revisit_ssim_floor", control)
+    row["revisit_ssim_norm"] = mean("revisit_ssim_norm", control)
     row["revisit_lpips"] = mean("revisit_lpips", control)
     row["revisit_dino_est_pose"] = mean("revisit_dino_est_pose", control)
     row["revisit_ssim_est_pose"] = mean("revisit_ssim_est_pose", control)
     row["permanence_dino"] = mean("permanence_dino", mem)
+    row["permanence_dino_floor"] = mean("permanence_dino_floor", mem)
+    row["permanence_dino_norm"] = mean("permanence_dino_norm", mem)
     row["drift_slope_per_s"] = mean("drift_slope_per_s", control)
     row["null_motion_px"] = mean("null_motion_px", [proto.get("null_action", {})])
     cf = metrics.get("aggregate", {}).get("counterfactual", {})
@@ -116,9 +128,22 @@ def group_scores(row: dict) -> dict[str, float | None]:
     if lat is not None and not np.isnan(lat):
         add("control", max(0.0, 1.0 - lat / LATENCY_FAIL))
 
-    add("memory", _clip01(row.get("revisit_dino")))
-    add("memory", _clip01(row.get("revisit_ssim")))
-    add("memory", _clip01(row.get("permanence_dino")))
+    # Memory components are similarity scores, so they are scored *relative to the
+    # negative-pair floor* measured with the same instrument on pairs that are definitely
+    # not revisits (see protocol.py).  Without that, a model whose imagery is smooth scores
+    # high for being smooth: Yume read 0.437 revisit SSIM indoors against a 0.497 floor,
+    # i.e. below "a completely different direction", and its out-of-distribution SSIM of
+    # 0.622 was tracking a 0.636 floor rather than remembering more.  Raw values stay in
+    # the raw table for audit; the score uses the floor-relative ones when present.
+    for raw_key, norm_key in (
+        ("revisit_dino", "revisit_dino_norm"),
+        ("revisit_ssim", "revisit_ssim_norm"),
+        ("permanence_dino", "permanence_dino_norm"),
+    ):
+        val = row.get(norm_key)
+        if val is None or (isinstance(val, float) and np.isnan(val)):
+            val = row.get(raw_key)  # legacy metrics.json without floors
+        add("memory", _clip01(val))
 
     null = row.get("null_motion_px")
     if null is not None and not np.isnan(null):
@@ -230,10 +255,10 @@ def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop 
     # per-protocol raw numbers, the part a reviewer will actually re-derive
     lines += ["", "## Per-protocol detail", ""]
     lines.append(
-        "| model | protocol | flow_cos | flow_mag | int_yaw_deg | revisit_ssim | "
-        "revisit_dino | revisit_est_dino | permanence | drift/s | null px |"
+        "| model | protocol | flow_cos | flow_mag | int_yaw_deg | revisit_ssim | revisit_ssim_norm | "
+        "revisit_dino | revisit_dino_norm | permanence | permanence_norm | drift/s | null px |"
     )
-    lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in results:
         p = pathlib.Path(r) / "metrics.json"
         if not p.exists():
@@ -244,8 +269,10 @@ def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop 
             lines.append(
                 f"| `{name}` | {proto} | {_fmt(vals.get('flow_cos'))} | {_fmt(vals.get('flow_mag_ratio'))} | "
                 f"{_fmt(vals.get('integrated_yaw_deg'))} | {_fmt(vals.get('revisit_ssim'))} | "
-                f"{_fmt(vals.get('revisit_dino'))} | {_fmt(vals.get('revisit_dino_est_pose'))} | "
-                f"{_fmt(vals.get('permanence_dino'))} | {_fmt(vals.get('drift_slope_per_s'))} | "
+                f"{_fmt(vals.get('revisit_ssim_norm'))} | "
+                f"{_fmt(vals.get('revisit_dino'))} | {_fmt(vals.get('revisit_dino_norm'))} | "
+                f"{_fmt(vals.get('permanence_dino'))} | {_fmt(vals.get('permanence_dino_norm'))} | "
+                f"{_fmt(vals.get('drift_slope_per_s'))} | "
                 f"{_fmt(vals.get('null_motion_px'))} |"
             )
 
@@ -277,7 +304,15 @@ def build_report(results: Iterable[str], out_path: str, title: str = "WorldLoop 
         "",
         "_Component definitions (all mapped to 0-100, 100 = a perfect analytic renderer):_",
         "_Control_ = mean(flow_cos, axis_purity, max(0, 1 − switch_latency/8)). ",
-        "_Memory_ = mean(revisit_dino, revisit_ssim, permanence_dino). ",
+        "_Memory_ = mean(revisit_dino_norm, revisit_ssim_norm, permanence_dino_norm), each "
+        "a similarity scored *relative to a negative-pair floor*: the same DINO/SSIM "
+        "instrument applied to pairs that are definitely not revisits (the reference against "
+        "frames with the commanded camera ≥120° away; for permanence, probe A's patch against "
+        "probe B's direction). Similarity without that subtraction measures image smoothness "
+        "as much as memory — Yume's revisit DINO was 0.352 indoors against its own 0.350 "
+        "floor, i.e. no more like the start view than like a random other direction, and its "
+        "out-of-distribution SSIM of 0.622 was tracking a 0.572 floor. Raw values are kept in "
+        "the per-protocol table for audit. ",
         "_Stability_ = mean(max(0, 1 − null_motion/8), max(0, 1 − |drift/s|/0.05)). ",
         "_Causality_ = clip01(mean CF action sep / 0.25) × 1/(1 + mean CF null drift / 0.25), "
         "both means taken over counterfactual groups: the action branches must separate from "

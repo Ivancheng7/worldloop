@@ -431,6 +431,73 @@ def score_case(
         if sims:
             out["permanence_dino"] = float(np.mean(sims))
             out["permanence_min"] = float(np.min(sims))
+            # Cross-probe floor: probe A's reference patch against probe B's direction in
+            # the revisit frame.  That is "how alike are two unrelated parts of this
+            # model's world", measured with the same instrument, and it needs no extra
+            # rollout.  A far-away floor is not available here - a probe direction with
+            # lon in [-90, 90] is simply not visible from 180 deg away, which is exactly
+            # why the probe set is fixed to the start view.  Measured: Yume and Wan sit
+            # *on* this floor (0.191 vs 0.190, 0.195 vs 0.203), the oracle clears it by
+            # 0.63, so the raw number is not comparable between the two families.
+            cross: list[tuple[np.ndarray, np.ndarray]] = []
+            for i, pr in enumerate(probes):
+                ref_patch = patch(ref_img, pr["ref_px"], pr["ref_py"], pr["size"])
+                if ref_patch is None:
+                    continue
+                for j, other in enumerate(probes):
+                    if i == j:
+                        continue
+                    px, py, vis = project_dir(cams[revisit_idx], other["lon"], other["lat"])
+                    if not vis:
+                        continue
+                    q = patch(frames[revisit_idx], px, py, other["size"])
+                    if q is not None:
+                        cross.append((ref_patch, q))
+            if cross:
+                ea = dino_embed([c[0] for c in cross], device=device)
+                eb = dino_embed([c[1] for c in cross], device=device)
+                perm_floor = float(np.mean(np.clip((ea * eb).sum(axis=1), 0.0, 1.0)))
+                out["permanence_dino_floor"] = perm_floor
+                out["permanence_dino_norm"] = float(
+                    np.clip((out["permanence_dino"] - perm_floor) / max(1e-6, 1.0 - perm_floor), 0.0, 1.0)
+                )
+
+    # ---- negative-pair floors for the whole-frame memory metrics ---------
+    # Revisit is a *similarity*, so its scale depends on what the model's imagery looks
+    # like: smooth, low-texture frames are similar to everything, which inflates a
+    # similarity without any memory being involved.  Measured on Yume-5B: revisit SSIM
+    # 0.437 indoors vs 0.622 out of distribution, tracking a negative-pair floor of 0.497
+    # vs 0.636, so the apparent OOD "improvement" was the floor and nothing else.
+    #
+    # The floor is measured with the same two instruments on the reference against frames
+    # where the *commanded* camera is >= 120 deg away, i.e. definitely not a revisit.
+    # A model whose own imagery does not change when the command does (a frozen frame) has
+    # no negative pair of its own: then the floor comes from the panorama itself (the
+    # analytic render 180 deg away), which credits the trivial memory it does have and
+    # leaves the failure on the control axis where it belongs.
+    if n >= 6 and revisit_idx is not None:
+        far_idx = [i for i, c in enumerate(cams) if abs(_wrap(c.yaw - start_cam.yaw)) >= math.radians(120.0)]
+        floor_dino = floor_ssim = None
+        if far_idx:
+            far_emb = dino_embed([frames[i] for i in far_idx], device=device)
+            floor_dino = float(np.mean(np.clip(far_emb @ ref, 0.0, 1.0)))
+            floor_ssim = float(np.mean([ssim(ref_img, frames[i]) for i in far_idx]))
+        if floor_dino is None or (1.0 - floor_dino) < 0.02:
+            # no usable negative pair of the model's own: fall back to the panorama's
+            pano_floor = _pano_negative_floor(case, ref_img, device=device)
+            if pano_floor is not None:
+                floor_dino, floor_ssim = pano_floor
+        if floor_dino is not None and floor_ssim is not None:
+            out["revisit_dino_floor"] = floor_dino
+            out["revisit_ssim_floor"] = floor_ssim
+            for key, visit, floor in (
+                ("revisit_dino", out.get("revisit_dino"), floor_dino),
+                ("revisit_ssim", out.get("revisit_ssim"), floor_ssim),
+            ):
+                if isinstance(visit, (int, float)) and not np.isnan(visit):
+                    out[key + "_norm"] = float(
+                        np.clip((visit - floor) / max(1e-6, 1.0 - floor), 0.0, 1.0)
+                    )
 
     # ---- null action -----------------------------------------------------
     if case["protocol"] == "null_action":
@@ -446,6 +513,37 @@ def score_case(
 
 def _wrap(a: float) -> float:
     return (a + math.pi) % (2 * math.pi) - math.pi
+
+
+def _pano_negative_floor(case: dict, ref_img: np.ndarray, device: str = "cuda") -> tuple[float, float] | None:
+    """Negative-pair floor taken from the panorama, for models whose imagery never moves.
+
+    Renders the analytic ground truth 180 deg from the start pose and scores it against
+    ``ref_img`` with the same SSIM/DINO instruments revisit uses.  This answers "how
+    similar is this model's *world* to a completely different direction of it", which is
+    the only negative pair available when the rollout itself is one frozen image.
+    """
+    pano_str = case.get("pano")
+    if not pano_str:
+        return None
+    pano_path = Path(pano_str)
+    if not pano_path.is_file():
+        alt = Path(__file__).resolve().parents[2] / pano_str
+        if alt.is_file():
+            pano_path = alt
+    if not pano_path.is_file():
+        return None
+    far_cam = PanoCamera(
+        yaw=float(case["start_yaw"]) + math.pi,
+        pitch=float(case["start_pitch"]),
+        fov=case["fov"],
+        width=case["width"],
+        height=case["height"],
+    )
+    far_img = render(_cached_pano(str(pano_path.resolve())), far_cam)
+    far_emb = dino_embed([far_img], device=device)
+    ref_emb = dino_embed([ref_img], device=device)
+    return cosine(ref_emb[0], far_emb[0]), ssim(ref_img, far_img)
 
 
 def score_paired_divergence(results_root: str | Path, cases: dict[str, dict], device: str = "cuda") -> dict:
